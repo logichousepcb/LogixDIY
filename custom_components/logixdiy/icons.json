@@ -1,0 +1,33 @@
+{
+  "entity": {
+    "button": {
+      "press_single": { "default": "mdi:gesture-tap" },
+      "press_double": { "default": "mdi:gesture-double-tap" },
+      "press_triple": { "default": "mdi:gesture-tap-hold" },
+      "press_hold": { "default": "mdi:timer-sand" }
+    },
+    "event": {
+      "button": { "default": "mdi:gesture-tap-button" }
+    },
+    "light": {
+      "led": { "default": "mdi:led-on" }
+    },
+    "number": {
+      "brightness": { "default": "mdi:brightness-6" }
+    },
+    "select": {
+      "led_state": {
+        "default": "mdi:palette",
+        "state": {
+          "off": "mdi:led-off"
+        }
+      }
+    },
+    "sensor": {
+      "ip_address": { "default": "mdi:ip-network" }
+    }
+  },
+  "services": {
+    "set_led_colors": { "service": "mdi:palette" }
+  }
+}

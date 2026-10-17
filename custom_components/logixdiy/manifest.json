@@ -1,0 +1,16 @@
+{
+  "domain": "logixdiy",
+  "name": "LogixDIY",
+  "after_dependencies": ["mqtt", "zeroconf"],
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/logichousepcb/LogixDIY",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/logichousepcb/LogixDIY/issues",
+  "mqtt": ["logix/discovery/#"],
+  "requirements": [],
+  "version": "1.0.0",
+  "zeroconf": ["_logix._tcp.local."]
+}

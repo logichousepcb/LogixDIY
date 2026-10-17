@@ -1,0 +1,175 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Add a Logix device",
+        "description": "Enter the address of your Logix device. Devices on the same network are usually found automatically.",
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "IP address or hostname, for example 192.168.1.50 or esp12f-e527.local."
+        }
+      },
+      "discovery_confirm": {
+        "title": "Logix device found",
+        "description": "Do you want to add {name} ({host})?"
+      },
+      "credentials": {
+        "title": "Admin password",
+        "description": "{name} is protected by an admin password. Enter the password set under Device Settings → Hostname & Security.",
+        "data": {
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Admin password changed",
+        "description": "The admin password for {name} no longer works. Enter the current one.",
+        "data": {
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Change device address",
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the same device."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to the device. Check the address and that it is on the network.",
+      "invalid_auth": "Incorrect password.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This device is already set up.",
+      "already_in_progress": "Setup for this device is already in progress.",
+      "api_too_new": "This device's firmware is newer than this integration supports. Update the LogixDIY integration.",
+      "cannot_connect": "Could not connect to the device.",
+      "invalid_discovery_info": "The discovered device sent incomplete information.",
+      "not_ipv4_address": "Only IPv4 addresses are supported.",
+      "not_supported": "This Logix model is not supported yet. Update the LogixDIY integration.",
+      "reauth_successful": "Password updated.",
+      "reconfigure_successful": "Address updated.",
+      "wrong_device": "That address belongs to a different Logix device."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "LogixDIY options",
+        "data": {
+          "use_mqtt": "Use MQTT push when available",
+          "scan_interval": "Poll interval"
+        },
+        "data_description": {
+          "use_mqtt": "If the device and Home Assistant use the same MQTT broker, state changes and button actions are pushed instantly and polling slows to once a minute.",
+          "scan_interval": "How often to poll the device when MQTT push is not available. Button actions are detected on each poll, so shorter is more responsive."
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "single": "{subtype} pressed once",
+      "double": "{subtype} pressed twice",
+      "triple": "{subtype} pressed three times",
+      "hold": "{subtype} held for 3 seconds"
+    },
+    "trigger_subtype": {
+      "button_1": "Button 1",
+      "button_2": "Button 2",
+      "button_3": "Button 3",
+      "button_4": "Button 4",
+      "button_5": "Button 5",
+      "button_6": "Button 6",
+      "button_7": "Button 7",
+      "button_8": "Button 8"
+    }
+  },
+  "entity": {
+    "button": {
+      "press_single": { "name": "Button {button} single press" },
+      "press_double": { "name": "Button {button} double press" },
+      "press_triple": { "name": "Button {button} triple press" },
+      "press_hold": { "name": "Button {button} hold" }
+    },
+    "event": {
+      "button": {
+        "name": "Button {button}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "single": "Single press",
+              "double": "Double press",
+              "triple": "Triple press",
+              "hold": "Hold"
+            }
+          }
+        }
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED {led}",
+        "state_attributes": {
+          "effect": {
+            "state": {
+              "single": "Single press color",
+              "double": "Double press color",
+              "triple": "Triple press color",
+              "hold": "Hold color"
+            }
+          }
+        }
+      }
+    },
+    "number": {
+      "brightness": { "name": "LED brightness" }
+    },
+    "select": {
+      "led_state": {
+        "name": "LED {led} state",
+        "state": {
+          "off": "Off",
+          "single": "Single press color",
+          "double": "Double press color",
+          "triple": "Triple press color",
+          "hold": "Hold color"
+        }
+      }
+    },
+    "sensor": {
+      "wifi_signal": { "name": "Wi-Fi signal" },
+      "ip_address": { "name": "IP address" }
+    }
+  },
+  "exceptions": {
+    "api_too_new": { "message": "The device firmware is newer than this integration supports." },
+    "cannot_connect": { "message": "Could not reach the device: {error}" },
+    "command_rejected": { "message": "The device rejected the command: {error}" },
+    "invalid_auth": { "message": "The device rejected the admin password." },
+    "invalid_effect": { "message": "Unknown LED effect: {effect}" },
+    "no_colors": { "message": "Give at least one color to set." },
+    "not_supported": { "message": "This Logix model is not supported by this version of the integration." },
+    "update_failed": { "message": "Could not update the device: {error}" },
+    "wrong_device": { "message": "The device at {host} is a different Logix device. Update its address under Reconfigure." }
+  },
+  "services": {
+    "set_led_colors": {
+      "name": "Set LED colors",
+      "description": "Changes the saved colors of a Logix LED without changing which color it is showing. Give only the colors you want to change.",
+      "fields": {
+        "single_color": { "name": "Single press color", "description": "Shown after one press." },
+        "double_color": { "name": "Double press color", "description": "Shown after two quick presses." },
+        "triple_color": { "name": "Triple press color", "description": "Shown after three quick presses." },
+        "hold_color": { "name": "Hold color", "description": "Shown after holding the button for 3 seconds." },
+        "off_color": { "name": "Off color", "description": "Shown while the LED is off. Black means dark." }
+      }
+    }
+  }
+}

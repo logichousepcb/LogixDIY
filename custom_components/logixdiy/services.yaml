@@ -1,0 +1,26 @@
+set_led_colors:
+  target:
+    entity:
+      integration: logixdiy
+      domain: light
+  fields:
+    single_color:
+      example: [255, 64, 64]
+      selector:
+        color_rgb:
+    double_color:
+      example: [255, 160, 0]
+      selector:
+        color_rgb:
+    triple_color:
+      example: [255, 255, 255]
+      selector:
+        color_rgb:
+    hold_color:
+      example: [128, 0, 255]
+      selector:
+        color_rgb:
+    off_color:
+      example: [0, 0, 0]
+      selector:
+        color_rgb:
