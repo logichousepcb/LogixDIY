@@ -41,6 +41,10 @@ If the device has an admin password, you are asked for it. If you change the pas
 
 ## What you get (Logix 3)
 
+<p align="center">
+  <img src="images/device-page.png" alt="Home Assistant device page for a Logix 3, showing device info, LED light and state controls, LED brightness and recent activity" width="760">
+</p>
+
 | Entity | Count | Description |
 |---|---|---|
 | `event.<device>_button_N` | 3 | Fires `single`, `double`, `triple` or `hold` for every completed button action |
