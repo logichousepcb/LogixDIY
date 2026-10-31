@@ -32,7 +32,7 @@ from .const import (
     LOGGER,
 )
 from .coordinator import LogixConfigEntry
-from .models import device_title, unsupported_reason
+from .models import MODELS, device_title, unsupported_reason
 
 PASSWORD_SCHEMA = vol.Schema(
     {vol.Required(CONF_PASSWORD): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))}
@@ -154,8 +154,12 @@ class LogixConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _async_check_password(self, host: str, password: str) -> str | None:
         """Return an error key, or None if the password works."""
+        client = self._client(host, password)
         try:
-            await self._client(host, password).get_controller()
+            if not self._info:
+                # Reauth: /api/info never needs a password and says which state format to expect.
+                self._info = await client.get_info()
+            await client.get_controller(MODELS[self._info["model"]].parse_state)
         except LogixAuthError:
             return "invalid_auth"
         except LogixConnectionError:

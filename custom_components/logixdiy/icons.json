@@ -10,7 +10,8 @@
       "button": { "default": "mdi:gesture-tap-button" }
     },
     "light": {
-      "led": { "default": "mdi:led-on" }
+      "led": { "default": "mdi:led-on" },
+      "status_light": { "default": "mdi:led-on" }
     },
     "number": {
       "brightness": { "default": "mdi:brightness-6" }

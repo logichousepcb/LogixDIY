@@ -126,7 +126,22 @@
             }
           }
         }
+      },
+      "status_light": {
+        "name": "Status light",
+        "state_attributes": {
+          "effect": {
+            "state": {
+              "off": "Off",
+              "pulse": "Pulse",
+              "fast_pulse": "Fast pulse"
+            }
+          }
+        }
       }
+    },
+    "cover": {
+      "vent": { "name": "Vent" }
     },
     "number": {
       "brightness": { "name": "LED brightness" }
@@ -154,6 +169,7 @@
     "command_rejected": { "message": "The device rejected the command: {error}" },
     "invalid_auth": { "message": "The device rejected the admin password." },
     "invalid_effect": { "message": "Unknown LED effect: {effect}" },
+    "led_colors_not_supported": { "message": "This light has no saved colors. Use light.turn_on to set its color." },
     "no_colors": { "message": "Give at least one color to set." },
     "not_supported": { "message": "This Logix model is not supported by this version of the integration." },
     "update_failed": { "message": "Could not update the device: {error}" },

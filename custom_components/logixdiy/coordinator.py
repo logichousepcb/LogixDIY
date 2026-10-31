@@ -17,12 +17,12 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import (
     RGB,
-    ControllerState,
     LogixAuthError,
     LogixClient,
     LogixCommandError,
     LogixConnectionError,
     LogixError,
+    LogixState,
 )
 from .const import (
     ATTR_ACTION,
@@ -47,8 +47,12 @@ type LogixConfigEntry = ConfigEntry[LogixCoordinator]
 type ActionListener = Callable[[int, str], None]
 
 
-class LogixCoordinator(DataUpdateCoordinator[ControllerState]):
-    """Keeps one device's state current and turns its button actions into events."""
+class LogixCoordinator(DataUpdateCoordinator[LogixState]):
+    """Keeps one device's state current and turns its button actions into events.
+
+    The data is the model's state class (ControllerState for a Logix 3, VentState for a Logix
+    Vent); each model's platforms only read the fields of their own state class.
+    """
 
     config_entry: LogixConfigEntry
 
@@ -107,9 +111,9 @@ class LogixCoordinator(DataUpdateCoordinator[ControllerState]):
 
     # Polling -----------------------------------------------------------------------------------
 
-    async def _async_update_data(self) -> ControllerState:
+    async def _async_update_data(self) -> LogixState:
         try:
-            data = await self.client.get_controller()
+            data = await self.client.get_controller(self.model.parse_state)
             if self.status is None or time.monotonic() - self._status_at >= STATUS_INTERVAL:
                 await self._async_update_status()
         except LogixAuthError as err:
@@ -148,7 +152,7 @@ class LogixCoordinator(DataUpdateCoordinator[ControllerState]):
         return lambda: self._action_listeners.remove(listener)
 
     @callback
-    def _track_actions(self, data: ControllerState, *, fire: bool) -> None:
+    def _track_actions(self, data: LogixState, *, fire: bool) -> None:
         """Compare actionCount with the previous state and fire events for new actions."""
         counts = tuple(b.action_count for b in data.buttons)
         previous, self._action_counts = self._action_counts, counts
@@ -222,7 +226,7 @@ class LogixCoordinator(DataUpdateCoordinator[ControllerState]):
     @callback
     def _handle_mqtt_state(self, msg: ReceiveMessage) -> None:
         try:
-            data = ControllerState.from_json(json.loads(msg.payload))
+            data = self.model.parse_state(json.loads(msg.payload))
         except (ValueError, TypeError, LogixConnectionError) as err:
             LOGGER.debug("Ignoring bad state on %s: %s", msg.topic, err)
             return

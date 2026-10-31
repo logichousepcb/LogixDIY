@@ -13,6 +13,7 @@
 | Device | Model ID | Firmware |
 |---|---|---|
 | Logix 3: three-button RGB scene controller | `logix3` | [logix3-firmware](https://github.com/logichousepcb/logix3-firmware) 1.2.0 or later (API version 1) |
+| Logix Vent: motorised vent controller | `logixvent` | [vent-controller-firmware](https://github.com/logichousepcb/vent-controller-firmware) 1.2.0 or later (API version 1) |
 
 See **[DEVICES.md](DEVICES.md)** for each device's requirements, entities and known limitations. More Logix devices will be added over time.
 
@@ -90,6 +91,19 @@ data:
   hold_color: [128, 0, 255]
   off_color: [0, 0, 0]
 ```
+
+## What you get (Logix Vent)
+
+| Entity | Count | Description |
+|---|---|---|
+| `cover.<device>` | 1 | The vent (damper): open, close, stop. Shows opening or closing while the motor runs. |
+| `light.<device>_status_light` | 1 | RGB status light with brightness, transitions and `pulse` / `fast_pulse` effects |
+| `event.<device>_button_1` | 1 | Fires `single` when the physical button is pressed |
+| `button.<device>_button_1_single_press` | 1 | Presses the button remotely, toggling the vent. **Disabled by default.** |
+| `button.<device>_restart` | 1 | Restarts the device |
+| `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
+
+The vent firmware has no MQTT, so its state is polled. See [DEVICES.md](DEVICES.md#logix-vent) for details.
 
 ## How it talks to the device
 

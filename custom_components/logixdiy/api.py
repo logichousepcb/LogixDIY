@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -60,6 +61,17 @@ class LedState:
     off_color: RGB
 
 
+def _parse_buttons(data: dict[str, Any]) -> tuple[ButtonState, ...]:
+    return tuple(
+        ButtonState(
+            pressed=bool(b["pressed"]),
+            last_action=None if b["lastAction"] == "none" else b["lastAction"],
+            action_count=int(b["actionCount"]),
+        )
+        for b in data["buttons"]
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class ControllerState:
     """Parsed GET /api/controller (or the MQTT state topic, which omits live timing fields)."""
@@ -73,14 +85,7 @@ class ControllerState:
         """Build from the device's JSON; raises LogixConnectionError if it is malformed."""
         try:
             return cls(
-                buttons=tuple(
-                    ButtonState(
-                        pressed=bool(b["pressed"]),
-                        last_action=None if b["lastAction"] == "none" else b["lastAction"],
-                        action_count=int(b["actionCount"]),
-                    )
-                    for b in data["buttons"]
-                ),
+                buttons=_parse_buttons(data),
                 leds=tuple(
                     LedState(
                         state=led["state"],
@@ -93,6 +98,51 @@ class ControllerState:
             )
         except (KeyError, TypeError, ValueError, IndexError) as err:
             raise LogixConnectionError(f"Unexpected controller state: {err!r}") from err
+
+
+@dataclass(frozen=True, slots=True)
+class StatusLight:
+    """A single RGB status light with brightness and effects."""
+
+    on: bool
+    brightness: int
+    color: RGB
+    effect: str
+
+
+@dataclass(frozen=True, slots=True)
+class VentState:
+    """Parsed GET /api/controller of a Logix Vent."""
+
+    buttons: tuple[ButtonState, ...]
+    vent_state: str  # open or closed
+    operation: str  # idle, opening or closing
+    remaining_ms: int
+    light: StatusLight
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> VentState:
+        """Build from the device's JSON; raises LogixConnectionError if it is malformed."""
+        try:
+            vent = data["vent"]
+            light = data["light"]
+            return cls(
+                buttons=_parse_buttons(data),
+                vent_state=vent["state"],
+                operation=vent["operation"],
+                remaining_ms=int(vent.get("remainingMs", 0)),
+                light=StatusLight(
+                    on=light["state"] == "on",
+                    brightness=int(light["brightness"]),
+                    color=hex_to_rgb(light["hex"]),
+                    effect=light["effect"],
+                ),
+            )
+        except (KeyError, TypeError, ValueError, IndexError) as err:
+            raise LogixConnectionError(f"Unexpected vent state: {err!r}") from err
+
+
+type LogixState = ControllerState | VentState
 
 
 class LogixClient:
@@ -137,7 +187,7 @@ class LogixClient:
                 raise LogixConnectionError(f"Error talking to {self.host}: {err!r}") from err
 
         if status == 400 or (isinstance(body, dict) and body.get("ok") is False):
-            message = body.get("message") if isinstance(body, dict) else None
+            message = (body.get("message") or body.get("error")) if isinstance(body, dict) else None
             raise LogixCommandError(message or f"HTTP {status}")
         if status >= 300:
             raise LogixConnectionError(f"Unexpected HTTP {status} from {self.host}")
@@ -154,9 +204,11 @@ class LogixClient:
         """Firmware, network and system status."""
         return await self._request("GET", "/api/status")
 
-    async def get_controller(self) -> ControllerState:
-        """Button and LED state."""
-        return ControllerState.from_json(await self._request("GET", "/api/controller"))
+    async def get_controller[T: LogixState](
+        self, parse: Callable[[dict[str, Any]], T] = ControllerState.from_json
+    ) -> T:
+        """Live state from /api/controller, parsed by the model's state class."""
+        return parse(await self._request("GET", "/api/controller"))
 
     async def set_controller(self, fields: dict[str, Any]) -> None:
         """Set any LED colors, LED states or brightness (POST /api/controller keys)."""
@@ -169,6 +221,14 @@ class LogixClient:
     async def set_brightness(self, brightness: int) -> None:
         """Set brightness 0-255; the device debounces the flash write."""
         await self._request("POST", "/api/controller/brightness", {"brightness": brightness})
+
+    async def set_vent(self, action: str) -> None:
+        """Logix Vent: open, close, stop or toggle."""
+        await self._request("POST", "/api/vent", {"action": action})
+
+    async def set_light(self, fields: dict[str, Any]) -> None:
+        """Logix Vent status light: state, brightness, hex, effect, transition."""
+        await self._request("POST", "/api/light", fields)
 
     async def reboot(self) -> None:
         """Restart the device."""

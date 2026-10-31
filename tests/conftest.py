@@ -142,10 +142,10 @@ async def setup_entry(hass: HomeAssistant, entry: MockConfigEntry) -> None:
     await hass.async_block_till_done(wait_background_tasks=True)
 
 
-def posted(aioclient_mock: AiohttpClientMocker, path: str) -> list[dict[str, Any]]:
+def posted(aioclient_mock: AiohttpClientMocker, path: str, base: str = BASE) -> list[dict[str, Any]]:
     """Form data of every POST to `path`."""
     return [
         data
         for method, url, data, _ in aioclient_mock.mock_calls
-        if method == "POST" and str(url) == f"{BASE}{path}"
+        if method == "POST" and str(url) == f"{base}{path}"
     ]

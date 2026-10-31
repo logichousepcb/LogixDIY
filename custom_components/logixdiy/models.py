@@ -1,17 +1,20 @@
 """Logix device models supported by this integration.
 
-To add a device, register it in MODELS with the platforms it needs. Entities are built from
-the "capabilities" block of the device's /api/info, so a model with buttons and RGB LEDs like
-the Logix 3 needs nothing else. A device that works differently gets its own platform code.
+To add a device, register it in MODELS with the platforms it needs and the class that parses
+its /api/controller state. Entities are built from the "capabilities" block of the device's
+/api/info, so a model with buttons and RGB LEDs like the Logix 3 needs nothing else. A device
+that works differently gets its own state class and platform code, like the Logix Vent.
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.const import Platform
 
+from .api import ControllerState, LogixState, VentState
 from .const import SUPPORTED_API_VERSION
 
 
@@ -22,6 +25,7 @@ class LogixModel:
     model: str
     name: str
     platforms: tuple[Platform, ...]
+    parse_state: Callable[[dict[str, Any]], LogixState]
 
 
 MODELS: dict[str, LogixModel] = {
@@ -38,6 +42,19 @@ MODELS: dict[str, LogixModel] = {
                 Platform.SELECT,
                 Platform.SENSOR,
             ),
+            parse_state=ControllerState.from_json,
+        ),
+        LogixModel(
+            model="logixvent",
+            name="Logix Vent",
+            platforms=(
+                Platform.BUTTON,
+                Platform.COVER,
+                Platform.EVENT,
+                Platform.LIGHT,
+                Platform.SENSOR,
+            ),
+            parse_state=VentState.from_json,
         ),
     )
 }

@@ -5,6 +5,7 @@ This list covers every Logix device the LogixDIY integration can set up, and wha
 | Device | Model ID | Minimum firmware | API version | Integration version | Status |
 |---|---|---|---|---|---|
 | [Logix 3](#logix-3): three-button RGB scene controller | `logix3` | 1.2.0 | 1 | 1.0.0 | Supported |
+| [Logix Vent](#logix-vent): motorised vent controller | `logixvent` | 1.2.0 | 1 | 1.1.0 | Supported |
 
 **Model ID** is the `model` value the device reports in its mDNS TXT record and at `GET /api/info`. **API version** is the `api` value there. The integration refuses a device that reports a newer API version than it understands.
 
@@ -45,12 +46,49 @@ Also: device triggers for each button and action, the `logixdiy_button_action` b
 - Without MQTT, button actions are detected by polling (every second by default). If a button completes several actions between two polls, only the last one is reported.
 - An LED whose off color is not black still glows while Home Assistant shows its light as off.
 
+## Logix Vent
+
+A motorised vent controller built on an ESP8266 (ESP-01 class, 1 MB flash). It drives the vent motor one way or the other for a fixed 10 seconds, has a push button that toggles the vent, and a WS2811 RGB status light that turns red while opening and green while closing.
+
+- **Firmware:** [vent-controller-firmware](https://github.com/logichousepcb/vent-controller-firmware), version 1.2.0 or later. It installs over the web page OTA form of a board still running the original ESPHome configuration.
+
+The firmware also keeps the ESPHome native API, so the device can be set up through ESPHome's own integration as well. Use one or the other. With both, every entity appears twice.
+
+### Discovery
+
+| Method | Requirement |
+|---|---|
+| mDNS (`_logix._tcp`) | Device and Home Assistant on the same network segment |
+| Manual | Device IP address or hostname, e.g. `basementvent.local` |
+
+The firmware has no MQTT, so the state is polled (every second by default).
+
+### Entities
+
+| Entity | Count | Notes |
+|---|---|---|
+| Cover: vent | 1 | Damper. Open, close, stop. Shows opening or closing while the motor runs, with `remaining_ms` as an attribute. |
+| Light: Status light | 1 | RGB with brightness, transitions and the effects `pulse` and `fast_pulse` |
+| Event: Button 1 | 1 | Fires `single` when the physical button is pressed |
+| Button: Button 1 single press | 1 | Same as pressing the physical button: toggles the vent. Disabled by default. |
+| Button: Restart | 1 | |
+| Sensor: Wi-Fi signal | 1 | Diagnostic |
+| Sensor: IP address | 1 | Diagnostic. Disabled by default. |
+
+Also: a device trigger "Button 1 pressed once" and the `logixdiy_button_action` bus event.
+
+### Known limitations
+
+- The vent has no position sensor. Its open or closed state is where it was last driven, and it is not corrected if the vent is moved by hand.
+- A press of the physical button is only detected on the next poll. If it is pressed several times between two polls, one event fires.
+- `logixdiy.set_led_colors` does not apply to the status light; use `light.turn_on`.
+
 ## Adding a device
 
 When a new Logix device is ready:
 
 1. Its firmware uses `BaseCore`, so it advertises `_logix._tcp`, serves `GET /api/info` and publishes `logix/discovery/<id>`.
-2. Register its model ID in [`custom_components/logixdiy/models.py`](custom_components/logixdiy/models.py), with its display name and entity platforms.
-3. If its controls differ from the Logix 3's (buttons and RGB LEDs), add the platform code for them.
+2. Register its model ID in [`custom_components/logixdiy/models.py`](custom_components/logixdiy/models.py), with its display name, entity platforms and the class that parses its `/api/controller` state.
+3. If its controls differ from the Logix 3's (buttons and RGB LEDs), add a state class in `api.py` and the platform code for them, as the Logix Vent does with `VentState`, `cover.py` and its status light.
 4. Add tests with sample `/api/info` and state responses from the real firmware.
 5. Add a row to the table above and a section for the device, then bump `version` in [`manifest.json`](custom_components/logixdiy/manifest.json).
