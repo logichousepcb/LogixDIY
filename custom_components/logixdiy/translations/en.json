@@ -127,6 +127,18 @@
           }
         }
       },
+      "light": {
+        "name": "Light",
+        "state_attributes": {
+          "effect": {
+            "state": {
+              "off": "Off",
+              "pulse": "Pulse",
+              "fast_pulse": "Fast pulse"
+            }
+          }
+        }
+      },
       "status_light": {
         "name": "Status light",
         "state_attributes": {

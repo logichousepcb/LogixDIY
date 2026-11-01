@@ -11,6 +11,7 @@
     },
     "light": {
       "led": { "default": "mdi:led-on" },
+      "light": { "default": "mdi:lightbulb-night" },
       "status_light": { "default": "mdi:led-on" }
     },
     "number": {

@@ -4,7 +4,8 @@ Logix 3: one per RGB LED. The LED is "on" in any state other than off. Its effec
 it shows (single, double, triple or hold), and its color is the color saved for that state, so
 changing the color edits that slot. Brightness is shared by all LEDs on the device.
 
-Logix Vent: one ordinary RGB status light with brightness, transitions and pulse effects.
+Logix Vent and Logix RGB Plug: one ordinary RGB light with brightness, transitions and pulse
+effects. The vent's is a status light; the plug's is its night light, named "Light".
 """
 
 from __future__ import annotations
@@ -28,7 +29,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import slugify
 import voluptuous as vol
 
-from .api import StatusLight, VentState, rgb_to_hex
+from .api import OutletState, StatusLight, VentState, rgb_to_hex
 from .const import DOMAIN, SERVICE_SET_LED_COLORS
 from .coordinator import LogixConfigEntry, LogixCoordinator
 from .entity import LogixEntity
@@ -146,7 +147,11 @@ class LogixLed(LogixEntity, LightEntity):
 
 
 class LogixStatusLight(LogixEntity, LightEntity):
-    """The Logix Vent's RGB status light. The vent sets it red while opening, green while closing."""
+    """A device's one RGB light (capability "statusLight").
+
+    The Logix Vent's status light, which the vent sets red while opening and green while closing,
+    or the Logix RGB Plug's night light, which the plug's button toggles with a double press.
+    """
 
     _attr_color_mode = ColorMode.RGB
     _attr_supported_color_modes = {ColorMode.RGB}
@@ -160,6 +165,8 @@ class LogixStatusLight(LogixEntity, LightEntity):
     def __init__(self, coordinator: LogixCoordinator) -> None:
         """Initialize the entity."""
         super().__init__(coordinator, "status_light")
+        if coordinator.capabilities.get("outlets"):
+            self._attr_translation_key = "light"  # a plug's night light, not a status indicator
         effects = coordinator.capabilities["statusLight"].get("effects", ())
         self._to_device = {EFFECT_OFF: self._DEVICE_NO_EFFECT}
         self._to_device.update({slugify(e): e for e in effects if e != self._DEVICE_NO_EFFECT})
@@ -168,8 +175,8 @@ class LogixStatusLight(LogixEntity, LightEntity):
 
     @property
     def _light(self) -> StatusLight:
-        data: VentState = self.coordinator.data  # type: ignore[assignment]
-        return data.light
+        data: VentState | OutletState = self.coordinator.data  # type: ignore[assignment]
+        return data.light  # type: ignore[return-value]  # only set up with a statusLight capability
 
     @property
     def is_on(self) -> bool:

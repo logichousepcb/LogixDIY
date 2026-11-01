@@ -16,6 +16,7 @@
 | Logix Vent: motorised vent controller | `logixvent` | [vent-controller-firmware](https://github.com/logichousepcb/vent-controller-firmware) 1.2.0 or later (API version 1) |
 | Logix Outlet: Gosund WO1 in-wall duplex receptacle with energy monitoring | `logixoutlet` | [logix-outlet-firmware](https://github.com/logichousepcb/logix-outlet-firmware) 1.0.0 or later (API version 1) |
 | Logix Plug: Geekbes YM-WS-1 plug-in smart plug | `logixplug` | [logix-plug-firmware](https://github.com/logichousepcb/logix-plug-firmware) 1.0.0 or later (API version 1) |
+| Logix RGB Plug: plug-in smart plug with an RGB night light | `logixrgbplug` | [logix-rgb-plug-firmware](https://github.com/logichousepcb/logix-rgb-plug-firmware) 1.0.0 or later (API version 1) |
 
 See **[DEVICES.md](DEVICES.md)** for each device's requirements, entities and known limitations. More Logix devices will be added over time.
 
@@ -132,6 +133,19 @@ A device named on its own settings page (e.g. "Family Room Outlet") is added und
 | `switch.<device>` | 1 | The plug's outlet, named after the device (e.g. `switch.entry_table_lamp`). The physical button toggles it too, with or without Home Assistant. |
 | `event.<device>_button_1` | 1 | Fires `single` for each press of the button |
 | `button.<device>_button_1_single_press` | 1 | Presses the button remotely, toggling the plug. **Disabled by default.** |
+| `button.<device>_restart` | 1 | Restarts the device |
+| `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
+
+The plug has no energy meter, so there are no energy sensors.
+
+## What you get (Logix RGB Plug)
+
+| Entity | Count | Description |
+|---|---|---|
+| `switch.<device>` | 1 | The plug's outlet, named after the device (e.g. `switch.xtool_m1`). A single press of the physical button toggles it too, with or without Home Assistant. |
+| `light.<device>_light` | 1 | The RGB night light, with brightness, transitions and `pulse` / `fast_pulse` effects. A double press of the button toggles it. |
+| `event.<device>_button_1` | 1 | Fires `single` or `double` for each button action |
+| `button.<device>_button_1_single_press`, `button.<device>_button_1_double_press` | 2 | Press the button remotely. **Disabled by default.** |
 | `button.<device>_restart` | 1 | Restarts the device |
 | `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
 

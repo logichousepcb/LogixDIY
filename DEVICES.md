@@ -8,6 +8,7 @@ This list covers every Logix device the LogixDIY integration can set up, and wha
 | [Logix Vent](#logix-vent): motorised vent controller | `logixvent` | 1.2.0 | 1 | 1.1.0 | Supported |
 | [Logix Outlet](#logix-outlet): in-wall duplex receptacle with energy monitoring | `logixoutlet` | 1.0.0 | 1 | 1.2.0 | Supported |
 | [Logix Plug](#logix-plug): plug-in smart plug, one outlet | `logixplug` | 1.0.0 | 1 | 1.3.0 | Supported |
+| [Logix RGB Plug](#logix-rgb-plug): plug-in smart plug with an RGB night light | `logixrgbplug` | 1.0.0 | 1 | 1.4.0 | Supported |
 
 **Model ID** is the `model` value the device reports in its mDNS TXT record and at `GET /api/info`. **API version** is the `api` value there. The integration refuses a device that reports a newer API version than it understands.
 
@@ -151,6 +152,40 @@ Also: the device trigger "Button 1 pressed once", and the `logixdiy_button_actio
 ### Known limitations
 
 - No energy monitoring: the hardware has no meter.
+- The plug switches off for about 10 s while the device installs a firmware update.
+
+## Logix RGB Plug
+
+Replacement firmware for a plug-in smart plug with an RGB night light (ESP8266EX, 1 MB, Tasmota template "RGB Light"). It has one switched outlet, one RGB light and one button: a single press toggles the outlet, a double press toggles the light. It has no energy meter.
+
+- **Firmware:** [logix-rgb-plug-firmware](https://github.com/logichousepcb/logix-rgb-plug-firmware), version 1.0.0 or later. Install it over Tasmota's web OTA form with the gzipped image.
+
+### Discovery
+
+| Method | Requirement |
+|---|---|
+| mDNS (`_logix._tcp`) | Device and Home Assistant on the same network segment |
+| MQTT (`logix/discovery/<id>`) | MQTT enabled on the device, using the same broker as Home Assistant's MQTT integration |
+| Manual | Device IP address or hostname, e.g. `xtool-m1.local` |
+
+### Entities
+
+| Entity | Count | Notes |
+|---|---|---|
+| Switch (named after the device) | 1 | The outlet. Device class `outlet`. |
+| Light: Light | 1 | RGB, brightness, transitions, effects `pulse` and `fast_pulse` |
+| Event: Button 1 | 1 | Fires `single` (outlet toggled) or `double` (light toggled) |
+| Button: Button 1 single press, Button 1 double press | 2 | Act like the physical button. Disabled by default. |
+| Button: Restart | 1 | |
+| Sensor: Wi-Fi signal | 1 | Diagnostic |
+| Sensor: IP address | 1 | Diagnostic. Disabled by default. |
+
+Also: the device triggers "Button 1 pressed once" and "Button 1 pressed twice", and the `logixdiy_button_action` bus event.
+
+### Known limitations
+
+- No energy monitoring: the hardware has no meter.
+- A single press takes effect about 0.4 s after the press, while the device waits to see whether a second press follows.
 - The plug switches off for about 10 s while the device installs a firmware update.
 
 ## Adding a device

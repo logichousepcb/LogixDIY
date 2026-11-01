@@ -110,6 +110,15 @@ class StatusLight:
     effect: str
 
 
+def _parse_light(light: dict[str, Any]) -> StatusLight:
+    return StatusLight(
+        on=light["state"] == "on",
+        brightness=int(light["brightness"]),
+        color=hex_to_rgb(light["hex"]),
+        effect=light["effect"],
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class VentState:
     """Parsed GET /api/controller of a Logix Vent."""
@@ -131,12 +140,7 @@ class VentState:
                 vent_state=vent["state"],
                 operation=vent["operation"],
                 remaining_ms=int(vent.get("remainingMs", 0)),
-                light=StatusLight(
-                    on=light["state"] == "on",
-                    brightness=int(light["brightness"]),
-                    color=hex_to_rgb(light["hex"]),
-                    effect=light["effect"],
-                ),
+                light=_parse_light(light),
             )
         except (KeyError, TypeError, ValueError, IndexError) as err:
             raise LogixConnectionError(f"Unexpected vent state: {err!r}") from err
@@ -160,17 +164,19 @@ class EnergyReading:
 
 @dataclass(frozen=True, slots=True)
 class OutletState:
-    """Parsed GET /api/controller of a Logix Outlet or Logix Plug."""
+    """Parsed GET /api/controller of a Logix Outlet, Logix Plug or Logix RGB Plug."""
 
     buttons: tuple[ButtonState, ...]
     outlets: tuple[bool, ...]  # on/off, in outlet order (1 = top)
-    energy: EnergyReading | None  # None on devices without a meter (Logix Plug)
+    energy: EnergyReading | None  # None on devices without a meter (Logix Plug, Logix RGB Plug)
+    light: StatusLight | None = None  # the Logix RGB Plug's light
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> OutletState:
         """Build from the device's JSON; raises LogixConnectionError if it is malformed."""
         try:
             energy = data.get("energy")
+            light = data.get("light")
             return cls(
                 buttons=_parse_buttons(data),
                 outlets=tuple(o["state"] == "on" for o in data["outlets"]),
@@ -188,6 +194,7 @@ class OutletState:
                     total=float(energy["total"]),
                     total_start_time=energy.get("totalStartTime") or None,
                 ),
+                light=None if light is None else _parse_light(light),
             )
         except (KeyError, TypeError, ValueError, IndexError) as err:
             raise LogixConnectionError(f"Unexpected outlet state: {err!r}") from err
