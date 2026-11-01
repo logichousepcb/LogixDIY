@@ -6,6 +6,7 @@ This list covers every Logix device the LogixDIY integration can set up, and wha
 |---|---|---|---|---|---|
 | [Logix 3](#logix-3): three-button RGB scene controller | `logix3` | 1.2.0 | 1 | 1.0.0 | Supported |
 | [Logix Vent](#logix-vent): motorised vent controller | `logixvent` | 1.2.0 | 1 | 1.1.0 | Supported |
+| [Logix Outlet](#logix-outlet): in-wall duplex receptacle with energy monitoring | `logixoutlet` | 1.0.0 | 1 | 1.2.0 | Supported |
 
 **Model ID** is the `model` value the device reports in its mDNS TXT record and at `GET /api/info`. **API version** is the `api` value there. The integration refuses a device that reports a newer API version than it understands.
 
@@ -82,6 +83,42 @@ Also: a device trigger "Button 1 pressed once" and the `logixdiy_button_action` 
 - The vent has no position sensor. Its open or closed state is where it was last driven, and it is not corrected if the vent is moved by hand.
 - A press of the physical button is only detected on the next poll. If it is pressed several times between two polls, one event fires.
 - `logixdiy.set_led_colors` does not apply to the status light; use `light.turn_on`.
+
+## Logix Outlet
+
+Replacement firmware for the Gosund WO1 in-wall duplex receptacle (ESP8285, 1 MB). It has two independently switched outlets, one button for each, and a BL0937 energy meter that measures both outlets together.
+
+- **Firmware:** [logix-outlet-firmware](https://github.com/logichousepcb/logix-outlet-firmware), version 1.0.0 or later. Install it over Tasmota's web OTA form with the gzipped image.
+
+### Discovery
+
+| Method | Requirement |
+|---|---|
+| mDNS (`_logix._tcp`) | Device and Home Assistant on the same network segment |
+| MQTT (`logix/discovery/<id>`) | MQTT enabled on the device, using the same broker as Home Assistant's MQTT integration |
+| Manual | Device IP address or hostname, e.g. `family-room-outlet.local` |
+
+### Entities
+
+| Entity | Count | Notes |
+|---|---|---|
+| Switch: Top, Bottom | 2 | The outlets. Device class `outlet`. |
+| Sensor: Voltage, Current, Power | 3 | Energy meter, both outlets combined |
+| Sensor: Apparent power, Reactive power, Power factor | 3 | Disabled by default |
+| Sensor: Energy today, Energy yesterday, Energy total | 3 | kWh. Energy total is `total_increasing`, for the Energy dashboard. |
+| Event: Button 1-2 | 2 | Fires `single`. Button 1 is the top button. |
+| Button: Button 1-2 single press | 2 | Toggles that outlet like the physical button. Disabled by default. |
+| Button: Restart | 1 | |
+| Sensor: Wi-Fi signal | 1 | Diagnostic |
+| Sensor: IP address | 1 | Diagnostic. Disabled by default. |
+
+Also: device triggers "Button 1 pressed once" and "Button 2 pressed once", and the `logixdiy_button_action` bus event.
+
+### Known limitations
+
+- One meter measures both outlets, so there is no per-outlet power.
+- The energy readings are only as accurate as the device's calibration. Calibrate it on the device's own settings page.
+- The outlets switch off for about 10 s while the device installs a firmware update.
 
 ## Adding a device
 

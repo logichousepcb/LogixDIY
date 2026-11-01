@@ -14,6 +14,7 @@
 |---|---|---|
 | Logix 3: three-button RGB scene controller | `logix3` | [logix3-firmware](https://github.com/logichousepcb/logix3-firmware) 1.2.0 or later (API version 1) |
 | Logix Vent: motorised vent controller | `logixvent` | [vent-controller-firmware](https://github.com/logichousepcb/vent-controller-firmware) 1.2.0 or later (API version 1) |
+| Logix Outlet: Gosund WO1 in-wall duplex receptacle with energy monitoring | `logixoutlet` | [logix-outlet-firmware](https://github.com/logichousepcb/logix-outlet-firmware) 1.0.0 or later (API version 1) |
 
 See **[DEVICES.md](DEVICES.md)** for each device's requirements, entities and known limitations. More Logix devices will be added over time.
 
@@ -104,6 +105,24 @@ data:
 | `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
 
 The vent firmware has no MQTT, so its state is polled. See [DEVICES.md](DEVICES.md#logix-vent) for details.
+
+## What you get (Logix Outlet)
+
+| Entity | Count | Description |
+|---|---|---|
+| `switch.<device>_top`, `switch.<device>_bottom` | 2 | The two outlets. The physical buttons toggle them too, with or without Home Assistant. |
+| `sensor.<device>_voltage`, `_current`, `_power` | 3 | Live readings from the energy meter |
+| `sensor.<device>_apparent_power`, `_reactive_power`, `_power_factor` | 3 | **Disabled by default.** |
+| `sensor.<device>_energy_today`, `_energy_yesterday` | 2 | kWh. Today resets at local midnight on the device. |
+| `sensor.<device>_energy_total` | 1 | kWh. Use this one in the **Energy dashboard**. Attribute `total_start_time` says when it started counting. |
+| `event.<device>_button_1` / `_button_2` | 2 | Fires `single` for each press of the top / bottom button |
+| `button.<device>_button_N_single_press` | 2 | Presses the button remotely, toggling that outlet. **Disabled by default.** |
+| `button.<device>_restart` | 1 | Restarts the device |
+| `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
+
+The device has one energy meter for both outlets, so the readings are for the two combined.
+
+A device named on its own settings page (e.g. "Family Room Outlet") is added under that name, so its outlets become `Family Room Outlet Top` and `Family Room Outlet Bottom`.
 
 ## How it talks to the device
 

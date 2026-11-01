@@ -14,7 +14,7 @@ from typing import Any
 
 from homeassistant.const import Platform
 
-from .api import ControllerState, LogixState, VentState
+from .api import ControllerState, LogixState, OutletState, VentState
 from .const import SUPPORTED_API_VERSION
 
 
@@ -56,6 +56,17 @@ MODELS: dict[str, LogixModel] = {
             ),
             parse_state=VentState.from_json,
         ),
+        LogixModel(
+            model="logixoutlet",
+            name="Logix Outlet",
+            platforms=(
+                Platform.BUTTON,
+                Platform.EVENT,
+                Platform.SENSOR,
+                Platform.SWITCH,
+            ),
+            parse_state=OutletState.from_json,
+        ),
     )
 }
 
@@ -70,6 +81,9 @@ def unsupported_reason(info: dict[str, Any]) -> str | None:
 
 
 def device_title(info: dict[str, Any]) -> str:
-    """Default name for a device, e.g. "Logix 3 E527"."""
-    name = info.get("name") or MODELS[info["model"]].name
+    """Default name for a device: "Logix 3 E527", or the name the user gave it ("Family Room Outlet")."""
+    model_name = MODELS[info["model"]].name
+    name = info.get("name") or model_name
+    if name != model_name:
+        return name
     return f"{name} {str(info['id'])[-4:].upper()}"

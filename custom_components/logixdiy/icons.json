@@ -26,6 +26,11 @@
     },
     "sensor": {
       "ip_address": { "default": "mdi:ip-network" }
+    },
+    "switch": {
+      "outlet_top": { "default": "mdi:power-socket-us" },
+      "outlet_bottom": { "default": "mdi:power-socket-us" },
+      "outlet": { "default": "mdi:power-socket-us" }
     }
   },
   "services": {

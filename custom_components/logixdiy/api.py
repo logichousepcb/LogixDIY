@@ -142,7 +142,56 @@ class VentState:
             raise LogixConnectionError(f"Unexpected vent state: {err!r}") from err
 
 
-type LogixState = ControllerState | VentState
+@dataclass(frozen=True, slots=True)
+class EnergyReading:
+    """The Logix Outlet's energy meter (one meter for all outlets), as Tasmota reports it."""
+
+    voltage: float  # V
+    current: float  # A
+    power: float  # W
+    apparent_power: float  # VA
+    reactive_power: float  # var
+    factor: float  # 0-1
+    today: float  # kWh
+    yesterday: float  # kWh
+    total: float  # kWh
+    total_start_time: str | None  # local ISO time the total started counting
+
+
+@dataclass(frozen=True, slots=True)
+class OutletState:
+    """Parsed GET /api/controller of a Logix Outlet."""
+
+    buttons: tuple[ButtonState, ...]
+    outlets: tuple[bool, ...]  # on/off, in outlet order (1 = top)
+    energy: EnergyReading
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> OutletState:
+        """Build from the device's JSON; raises LogixConnectionError if it is malformed."""
+        try:
+            energy = data["energy"]
+            return cls(
+                buttons=_parse_buttons(data),
+                outlets=tuple(o["state"] == "on" for o in data["outlets"]),
+                energy=EnergyReading(
+                    voltage=float(energy["voltage"]),
+                    current=float(energy["current"]),
+                    power=float(energy["power"]),
+                    apparent_power=float(energy["apparentPower"]),
+                    reactive_power=float(energy["reactivePower"]),
+                    factor=float(energy["factor"]),
+                    today=float(energy["today"]),
+                    yesterday=float(energy["yesterday"]),
+                    total=float(energy["total"]),
+                    total_start_time=energy.get("totalStartTime") or None,
+                ),
+            )
+        except (KeyError, TypeError, ValueError, IndexError) as err:
+            raise LogixConnectionError(f"Unexpected outlet state: {err!r}") from err
+
+
+type LogixState = ControllerState | VentState | OutletState
 
 
 class LogixClient:
@@ -229,6 +278,10 @@ class LogixClient:
     async def set_light(self, fields: dict[str, Any]) -> None:
         """Logix Vent status light: state, brightness, hex, effect, transition."""
         await self._request("POST", "/api/light", fields)
+
+    async def set_outlet(self, outlet: int, state: str) -> None:
+        """Logix Outlet: switch outlet 1-N on, off or toggle."""
+        await self._request("POST", "/api/outlet", {"outlet": outlet, "state": state})
 
     async def reboot(self) -> None:
         """Restart the device."""

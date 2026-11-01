@@ -160,7 +160,20 @@
     },
     "sensor": {
       "wifi_signal": { "name": "Wi-Fi signal" },
-      "ip_address": { "name": "IP address" }
+      "ip_address": { "name": "IP address" },
+      "energy_today": { "name": "Energy today" },
+      "energy_yesterday": { "name": "Energy yesterday" },
+      "energy_total": {
+        "name": "Energy total",
+        "state_attributes": {
+          "total_start_time": { "name": "Counting since" }
+        }
+      }
+    },
+    "switch": {
+      "outlet_top": { "name": "Top" },
+      "outlet_bottom": { "name": "Bottom" },
+      "outlet": { "name": "Outlet {outlet}" }
     }
   },
   "exceptions": {
