@@ -17,6 +17,7 @@
 | Logix Outlet: Gosund WO1 in-wall duplex receptacle with energy monitoring | `logixoutlet` | [logix-outlet-firmware](https://github.com/logichousepcb/logix-outlet-firmware) 1.0.0 or later (API version 1) |
 | Logix Plug: Geekbes YM-WS-1 plug-in smart plug | `logixplug` | [logix-plug-firmware](https://github.com/logichousepcb/logix-plug-firmware) 1.0.0 or later (API version 1) |
 | Logix RGB Plug: plug-in smart plug with an RGB night light | `logixrgbplug` | [logix-rgb-plug-firmware](https://github.com/logichousepcb/logix-rgb-plug-firmware) 1.0.0 or later (API version 1) |
+| Logix GR: garage door relay with a button, RGB LED and temperature sensor | `logixgr` | [logix-gr-firmware](https://github.com/logichousepcb/logix-gr-firmware) 1.0.0 or later (API version 1) |
 
 See **[DEVICES.md](DEVICES.md)** for each device's requirements, entities and known limitations. More Logix devices will be added over time.
 
@@ -150,6 +151,20 @@ The plug has no energy meter, so there are no energy sensors.
 | `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
 
 The plug has no energy meter, so there are no energy sensors.
+
+## What you get (Logix GR)
+
+| Entity | Count | Description |
+|---|---|---|
+| `button.<device>_trigger` | 1 | Pulses the garage relay (2.4 s by default, set on the device), like pressing the door's wall button |
+| `sensor.<device>_temperature` | 1 | The DS18B20, with the offset set on the device. Shown in your unit system. |
+| `light.<device>_button_light` | 1 | The LED in the button, with brightness, transitions and `pulse` / `fast_pulse` effects |
+| `event.<device>_button_1` | 1 | Fires `single`, `double`, `triple` or `hold`. The button switches nothing on the device, so use these to give it a purpose. |
+| `button.<device>_button_1_single_press` … `_hold` | 4 | Simulate the button's actions. **Disabled by default.** |
+| `button.<device>_restart` | 1 | Restarts the device |
+| `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
+
+The relay is a button, not a switch or cover: it opens again by itself, and the device has no door position sensor.
 
 ## How it talks to the device
 

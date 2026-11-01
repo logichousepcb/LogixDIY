@@ -1,4 +1,5 @@
-"""Button entities: simulate a button action, and restart the device."""
+"""Button entities: simulate a button action, trigger the Logix GR's garage relay, and restart
+the device."""
 
 from __future__ import annotations
 
@@ -25,6 +26,8 @@ async def async_setup_entry(
         for button in range(1, coordinator.capabilities.get("buttons", 0) + 1)
         for action in coordinator.actions
     ]
+    if coordinator.capabilities.get("momentary"):
+        entities.append(LogixTriggerButton(coordinator))
     entities.append(LogixRestartButton(coordinator))
     async_add_entities(entities)
 
@@ -46,6 +49,24 @@ class LogixPressButton(LogixEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Simulate the action."""
         await self.coordinator.async_command(self.coordinator.client.press(self._button, self._action))
+
+
+class LogixTriggerButton(LogixEntity, ButtonEntity):
+    """Pulse a momentary relay (the Logix GR's garage door relay).
+
+    A button rather than a switch: the relay opens again by itself after the pulse, and the
+    device can't tell whether the door is open or closed.
+    """
+
+    _attr_translation_key = "trigger"
+
+    def __init__(self, coordinator: LogixCoordinator) -> None:
+        """Initialize the entity."""
+        super().__init__(coordinator, "trigger")
+
+    async def async_press(self) -> None:
+        """Pulse the relay."""
+        await self.coordinator.async_command(self.coordinator.client.trigger())
 
 
 class LogixRestartButton(LogixEntity, ButtonEntity):

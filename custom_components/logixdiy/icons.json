@@ -4,7 +4,8 @@
       "press_single": { "default": "mdi:gesture-tap" },
       "press_double": { "default": "mdi:gesture-double-tap" },
       "press_triple": { "default": "mdi:gesture-tap-hold" },
-      "press_hold": { "default": "mdi:timer-sand" }
+      "press_hold": { "default": "mdi:timer-sand" },
+      "trigger": { "default": "mdi:garage-variant" }
     },
     "event": {
       "button": { "default": "mdi:gesture-tap-button" }
@@ -12,6 +13,7 @@
     "light": {
       "led": { "default": "mdi:led-on" },
       "light": { "default": "mdi:lightbulb-night" },
+      "button_light": { "default": "mdi:led-on" },
       "status_light": { "default": "mdi:led-on" }
     },
     "number": {

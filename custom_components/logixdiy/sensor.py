@@ -1,4 +1,5 @@
-"""Sensors: diagnostics from /api/status, and the Logix Outlet's energy meter."""
+"""Sensors: diagnostics from /api/status, the Logix Outlet's energy meter and the Logix GR's
+temperature."""
 
 from __future__ import annotations
 
@@ -21,6 +22,7 @@ from homeassistant.const import (
     UnitOfEnergy,
     UnitOfPower,
     UnitOfReactivePower,
+    UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -158,6 +160,8 @@ async def async_setup_entry(
     entities: list[SensorEntity] = [LogixStatusSensor(coordinator, description) for description in SENSORS]
     if coordinator.capabilities.get("energy"):
         entities.extend(LogixEnergySensor(coordinator, description) for description in ENERGY_SENSORS)
+    if coordinator.capabilities.get("temperature"):
+        entities.append(LogixTemperatureSensor(coordinator))
     async_add_entities(entities)
 
 
@@ -205,3 +209,34 @@ class LogixEnergySensor(LogixEntity, SensorEntity):
         if self.entity_description.key != "energy_total":
             return None
         return {"total_start_time": self._energy.total_start_time}
+
+
+class LogixTemperatureSensor(LogixEntity, SensorEntity):
+    """The Logix GR's DS18B20, with the offset set on the device.
+
+    Read in °C whatever unit the device's own page shows; Home Assistant converts it.
+    """
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 1
+
+    def __init__(self, coordinator: LogixCoordinator) -> None:
+        """Initialize the entity."""
+        super().__init__(coordinator, "temperature")
+
+    @property
+    def _celsius(self) -> float | None:
+        state: OutletState = self.coordinator.data  # type: ignore[assignment]
+        return state.temperature.celsius if state.temperature else None
+
+    @property
+    def available(self) -> bool:
+        """Unavailable while the sensor has no reading (missing or not answering)."""
+        return super().available and self._celsius is not None
+
+    @property
+    def native_value(self) -> float | None:
+        """Temperature in °C."""
+        return self._celsius

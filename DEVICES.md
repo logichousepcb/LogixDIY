@@ -9,6 +9,7 @@ This list covers every Logix device the LogixDIY integration can set up, and wha
 | [Logix Outlet](#logix-outlet): in-wall duplex receptacle with energy monitoring | `logixoutlet` | 1.0.0 | 1 | 1.2.0 | Supported |
 | [Logix Plug](#logix-plug): plug-in smart plug, one outlet | `logixplug` | 1.0.0 | 1 | 1.3.0 | Supported |
 | [Logix RGB Plug](#logix-rgb-plug): plug-in smart plug with an RGB night light | `logixrgbplug` | 1.0.0 | 1 | 1.4.0 | Supported |
+| [Logix GR](#logix-gr): garage door relay with a button, RGB LED and temperature sensor | `logixgr` | 1.0.0 | 1 | 1.5.0 | Supported |
 
 **Model ID** is the `model` value the device reports in its mDNS TXT record and at `GET /api/info`. **API version** is the `api` value there. The integration refuses a device that reports a newer API version than it understands.
 
@@ -187,6 +188,41 @@ Also: the device triggers "Button 1 pressed once" and "Button 1 pressed twice", 
 - No energy monitoring: the hardware has no meter.
 - A single press takes effect about 0.4 s after the press, while the device waits to see whether a second press follows.
 - The plug switches off for about 10 s while the device installs a firmware update.
+
+## Logix GR
+
+The Logix GR ("Logix garage relay"): a custom ESP8266 board (4 MB, Tasmota template "LoGiX_GR") with a relay that is pulsed like a garage door wall button, a push button with a WS2812 RGB LED, and a DS18B20 temperature sensor. The button is decoupled: it only reports its actions, so Home Assistant decides what it does.
+
+- **Firmware:** [logix-gr-firmware](https://github.com/logichousepcb/logix-gr-firmware), version 1.0.0 or later. Install it over Tasmota's web OTA form with the gzipped image.
+
+### Discovery
+
+| Method | Requirement |
+|---|---|
+| mDNS (`_logix._tcp`) | Device and Home Assistant on the same network segment |
+| MQTT (`logix/discovery/<id>`) | MQTT enabled on the device, using the same broker as Home Assistant's MQTT integration |
+| Manual | Device IP address or hostname, e.g. `garage-opener.local` |
+
+### Entities
+
+| Entity | Count | Notes |
+|---|---|---|
+| Button: Trigger | 1 | Pulses the relay for the pulse time set on the device (2.4 s by default). Ignored while a pulse is running. |
+| Sensor: Temperature | 1 | °C from the device, shown in your unit system. Unavailable while the sensor has no reading. |
+| Light: Button light | 1 | RGB, brightness, transitions, effects `pulse` and `fast_pulse` |
+| Event: Button 1 | 1 | Fires `single`, `double`, `triple` or `hold` (4 s) |
+| Button: Button 1 single / double / triple press, hold | 4 | Report the action like the physical button; nothing switches on the device. Disabled by default. |
+| Button: Restart | 1 | |
+| Sensor: Wi-Fi signal | 1 | Diagnostic |
+| Sensor: IP address | 1 | Diagnostic. Disabled by default. |
+
+Also: device triggers for each button action, and the `logixdiy_button_action` bus event.
+
+### Known limitations
+
+- There is no door position sensor, so there is no cover entity: the integration can pulse the relay but can't tell whether the door is open or closed.
+- The Logix GR's hold is 4 s; the device trigger's name still says "held for 3 seconds", the Logix 3's hold time.
+- A single press is reported about 0.4 s after the press, while the device waits to see whether another press follows.
 
 ## Adding a device
 

@@ -163,13 +163,24 @@ class EnergyReading:
 
 
 @dataclass(frozen=True, slots=True)
+class TemperatureReading:
+    """The Logix GR's temperature sensor."""
+
+    celsius: float | None  # with the device's calibration offset; None while it has no reading
+
+
+@dataclass(frozen=True, slots=True)
 class OutletState:
-    """Parsed GET /api/controller of a Logix Outlet, Logix Plug or Logix RGB Plug."""
+    """Parsed GET /api/controller of a Logix Outlet, Logix Plug, Logix RGB Plug or Logix GR.
+
+    The Logix GR's one outlet is its momentary garage relay: on only during a pulse.
+    """
 
     buttons: tuple[ButtonState, ...]
     outlets: tuple[bool, ...]  # on/off, in outlet order (1 = top)
     energy: EnergyReading | None  # None on devices without a meter (Logix Plug, Logix RGB Plug)
-    light: StatusLight | None = None  # the Logix RGB Plug's light
+    light: StatusLight | None = None  # the Logix RGB Plug's and Logix GR's light
+    temperature: TemperatureReading | None = None  # the Logix GR's sensor
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> OutletState:
@@ -177,6 +188,7 @@ class OutletState:
         try:
             energy = data.get("energy")
             light = data.get("light")
+            temperature = data.get("temperature")
             return cls(
                 buttons=_parse_buttons(data),
                 outlets=tuple(o["state"] == "on" for o in data["outlets"]),
@@ -195,6 +207,9 @@ class OutletState:
                     total_start_time=energy.get("totalStartTime") or None,
                 ),
                 light=None if light is None else _parse_light(light),
+                temperature=None
+                if temperature is None
+                else TemperatureReading(celsius=float(temperature["celsius"]) if temperature["ok"] else None),
             )
         except (KeyError, TypeError, ValueError, IndexError) as err:
             raise LogixConnectionError(f"Unexpected outlet state: {err!r}") from err
@@ -291,6 +306,10 @@ class LogixClient:
     async def set_outlet(self, outlet: int, state: str) -> None:
         """Logix Outlet: switch outlet 1-N on, off or toggle."""
         await self._request("POST", "/api/outlet", {"outlet": outlet, "state": state})
+
+    async def trigger(self) -> None:
+        """Logix GR: pulse the garage relay, like pressing the door's wall button."""
+        await self._request("POST", "/api/trigger")
 
     async def reboot(self) -> None:
         """Restart the device."""

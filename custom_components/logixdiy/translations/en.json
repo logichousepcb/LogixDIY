@@ -96,7 +96,8 @@
       "press_single": { "name": "Button {button} single press" },
       "press_double": { "name": "Button {button} double press" },
       "press_triple": { "name": "Button {button} triple press" },
-      "press_hold": { "name": "Button {button} hold" }
+      "press_hold": { "name": "Button {button} hold" },
+      "trigger": { "name": "Trigger" }
     },
     "event": {
       "button": {
@@ -129,6 +130,18 @@
       },
       "light": {
         "name": "Light",
+        "state_attributes": {
+          "effect": {
+            "state": {
+              "off": "Off",
+              "pulse": "Pulse",
+              "fast_pulse": "Fast pulse"
+            }
+          }
+        }
+      },
+      "button_light": {
+        "name": "Button light",
         "state_attributes": {
           "effect": {
             "state": {
