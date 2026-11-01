@@ -1,4 +1,5 @@
-"""Switch entities: the Logix Outlet's outlets, named after their position (Top, Bottom)."""
+"""Switch entities: the Logix Outlet's outlets, named after their position (Top, Bottom), and
+the Logix Plug's single outlet, which takes the device's own name."""
 
 from __future__ import annotations
 
@@ -41,7 +42,9 @@ class LogixOutlet(LogixEntity, SwitchEntity):
         """Initialize the entity."""
         super().__init__(coordinator, f"outlet_{outlet}")
         self._outlet = outlet
-        if key in NAMED_OUTLETS:
+        if coordinator.capabilities.get("outlets") == 1:
+            self._attr_name = None  # the device's only outlet: "Entry Table Lamp", not "... Outlet 1"
+        elif key in NAMED_OUTLETS:
             self._attr_translation_key = f"outlet_{key}"
         else:
             self._attr_translation_key = "outlet"

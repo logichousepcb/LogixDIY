@@ -67,6 +67,17 @@ MODELS: dict[str, LogixModel] = {
             ),
             parse_state=OutletState.from_json,
         ),
+        LogixModel(
+            model="logixplug",
+            name="Logix Plug",
+            platforms=(
+                Platform.BUTTON,
+                Platform.EVENT,
+                Platform.SENSOR,
+                Platform.SWITCH,
+            ),
+            parse_state=OutletState.from_json,
+        ),
     )
 }
 

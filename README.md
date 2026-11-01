@@ -15,6 +15,7 @@
 | Logix 3: three-button RGB scene controller | `logix3` | [logix3-firmware](https://github.com/logichousepcb/logix3-firmware) 1.2.0 or later (API version 1) |
 | Logix Vent: motorised vent controller | `logixvent` | [vent-controller-firmware](https://github.com/logichousepcb/vent-controller-firmware) 1.2.0 or later (API version 1) |
 | Logix Outlet: Gosund WO1 in-wall duplex receptacle with energy monitoring | `logixoutlet` | [logix-outlet-firmware](https://github.com/logichousepcb/logix-outlet-firmware) 1.0.0 or later (API version 1) |
+| Logix Plug: Geekbes YM-WS-1 plug-in smart plug | `logixplug` | [logix-plug-firmware](https://github.com/logichousepcb/logix-plug-firmware) 1.0.0 or later (API version 1) |
 
 See **[DEVICES.md](DEVICES.md)** for each device's requirements, entities and known limitations. More Logix devices will be added over time.
 
@@ -123,6 +124,18 @@ The vent firmware has no MQTT, so its state is polled. See [DEVICES.md](DEVICES.
 The device has one energy meter for both outlets, so the readings are for the two combined.
 
 A device named on its own settings page (e.g. "Family Room Outlet") is added under that name, so its outlets become `Family Room Outlet Top` and `Family Room Outlet Bottom`.
+
+## What you get (Logix Plug)
+
+| Entity | Count | Description |
+|---|---|---|
+| `switch.<device>` | 1 | The plug's outlet, named after the device (e.g. `switch.entry_table_lamp`). The physical button toggles it too, with or without Home Assistant. |
+| `event.<device>_button_1` | 1 | Fires `single` for each press of the button |
+| `button.<device>_button_1_single_press` | 1 | Presses the button remotely, toggling the plug. **Disabled by default.** |
+| `button.<device>_restart` | 1 | Restarts the device |
+| `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
+
+The plug has no energy meter, so there are no energy sensors.
 
 ## How it talks to the device
 

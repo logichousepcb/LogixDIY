@@ -192,7 +192,7 @@ class LogixEnergySensor(LogixEntity, SensorEntity):
     @property
     def _energy(self) -> EnergyReading:
         state: OutletState = self.coordinator.data  # type: ignore[assignment]
-        return state.energy
+        return state.energy  # type: ignore[return-value]  # only set up on devices with a meter
 
     @property
     def native_value(self) -> float:

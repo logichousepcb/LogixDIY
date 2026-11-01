@@ -160,21 +160,23 @@ class EnergyReading:
 
 @dataclass(frozen=True, slots=True)
 class OutletState:
-    """Parsed GET /api/controller of a Logix Outlet."""
+    """Parsed GET /api/controller of a Logix Outlet or Logix Plug."""
 
     buttons: tuple[ButtonState, ...]
     outlets: tuple[bool, ...]  # on/off, in outlet order (1 = top)
-    energy: EnergyReading
+    energy: EnergyReading | None  # None on devices without a meter (Logix Plug)
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> OutletState:
         """Build from the device's JSON; raises LogixConnectionError if it is malformed."""
         try:
-            energy = data["energy"]
+            energy = data.get("energy")
             return cls(
                 buttons=_parse_buttons(data),
                 outlets=tuple(o["state"] == "on" for o in data["outlets"]),
-                energy=EnergyReading(
+                energy=None
+                if energy is None
+                else EnergyReading(
                     voltage=float(energy["voltage"]),
                     current=float(energy["current"]),
                     power=float(energy["power"]),
