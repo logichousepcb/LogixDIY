@@ -18,6 +18,7 @@
 | Logix Plug: Geekbes YM-WS-1 plug-in smart plug | `logixplug` | [logix-plug-firmware](https://github.com/logichousepcb/logix-plug-firmware) 1.0.0 or later (API version 1) |
 | Logix RGB Plug: plug-in smart plug with an RGB night light | `logixrgbplug` | [logix-rgb-plug-firmware](https://github.com/logichousepcb/logix-rgb-plug-firmware) 1.0.0 or later (API version 1) |
 | Logix GR: garage door relay with a button, RGB LED and temperature sensor | `logixgr` | [logix-gr-firmware](https://github.com/logichousepcb/logix-gr-firmware) 1.0.0 or later (API version 1) |
+| Logix RGB Switch: KAUF SRF10 in-wall RGB light switch | `logixrgbswitch` | [logix-rgb-switch-firmware](https://github.com/logichousepcb/logix-rgb-switch-firmware) 1.0.0 or later (API version 1) |
 
 See **[DEVICES.md](DEVICES.md)** for each device's requirements, entities and known limitations. More Logix devices will be added over time.
 
@@ -165,6 +166,19 @@ The plug has no energy meter, so there are no energy sensors.
 | `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
 
 The relay is a button, not a switch or cover: it opens again by itself, and the device has no door position sensor.
+
+## What you get (Logix RGB Switch)
+
+| Entity | Count | Description |
+|---|---|---|
+| `switch.<device>` | 1 | The wall switch's relay, named after the device (e.g. `switch.kauff2`), device class `switch`. A single press of the physical button toggles it too, with or without Home Assistant. |
+| `light.<device>_button_light` | 1 | The RGB light behind the button face (both of the switch's LEDs together), with brightness, transitions and `pulse` / `fast_pulse` effects. A double press of the button toggles it. |
+| `event.<device>_button_1` | 1 | Fires `single` or `double` for each button action |
+| `button.<device>_button_1_single_press`, `button.<device>_button_1_double_press` | 2 | Press the button remotely. **Disabled by default.** |
+| `button.<device>_restart` | 1 | Restarts the device |
+| `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
+
+The switch has no energy meter, so there are no energy sensors.
 
 ## How it talks to the device
 

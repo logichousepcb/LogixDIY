@@ -12,6 +12,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from homeassistant.components.switch import SwitchDeviceClass
 from homeassistant.const import Platform
 
 from .api import ControllerState, LogixState, OutletState, VentState
@@ -26,6 +27,10 @@ class LogixModel:
     name: str
     platforms: tuple[Platform, ...]
     parse_state: Callable[[dict[str, Any]], LogixState]
+    # The relay of a wall switch is a switch, not an outlet.
+    outlet_device_class: SwitchDeviceClass = SwitchDeviceClass.OUTLET
+    # Name of the statusLight entity, if the capabilities alone don't tell (see light.py).
+    light_translation_key: str | None = None
 
 
 MODELS: dict[str, LogixModel] = {
@@ -89,6 +94,20 @@ MODELS: dict[str, LogixModel] = {
                 Platform.SWITCH,
             ),
             parse_state=OutletState.from_json,
+        ),
+        LogixModel(
+            model="logixrgbswitch",
+            name="Logix RGB Switch",
+            platforms=(
+                Platform.BUTTON,
+                Platform.EVENT,
+                Platform.LIGHT,
+                Platform.SENSOR,
+                Platform.SWITCH,
+            ),
+            parse_state=OutletState.from_json,
+            outlet_device_class=SwitchDeviceClass.SWITCH,
+            light_translation_key="button_light",  # the RGB light behind the button face
         ),
         LogixModel(
             model="logixgr",

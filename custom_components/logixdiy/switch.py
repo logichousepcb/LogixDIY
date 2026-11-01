@@ -1,5 +1,6 @@
 """Switch entities: the Logix Outlet's outlets, named after their position (Top, Bottom), and
-the Logix Plug's single outlet, which takes the device's own name."""
+the single outlet of the Logix Plug, Logix RGB Plug and Logix RGB Switch (its relay), which takes
+the device's own name."""
 
 from __future__ import annotations
 
@@ -36,11 +37,10 @@ async def async_setup_entry(
 class LogixOutlet(LogixEntity, SwitchEntity):
     """One outlet. The physical button for it toggles it too, with or without Home Assistant."""
 
-    _attr_device_class = SwitchDeviceClass.OUTLET
-
     def __init__(self, coordinator: LogixCoordinator, outlet: int, key: str | None) -> None:
         """Initialize the entity."""
         super().__init__(coordinator, f"outlet_{outlet}")
+        self._attr_device_class: SwitchDeviceClass = coordinator.model.outlet_device_class
         self._outlet = outlet
         if coordinator.capabilities.get("outlets") == 1:
             self._attr_name = None  # the device's only outlet: "Entry Table Lamp", not "... Outlet 1"

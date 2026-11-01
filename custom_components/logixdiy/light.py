@@ -151,8 +151,8 @@ class LogixStatusLight(LogixEntity, LightEntity):
     """A device's one RGB light (capability "statusLight").
 
     The Logix Vent's status light, which the vent sets red while opening and green while closing,
-    the Logix RGB Plug's night light, which the plug's button toggles with a double press, or the
-    Logix GR's button LED, which only Home Assistant controls.
+    the Logix RGB Plug's night light and the Logix RGB Switch's button light, which their button
+    toggles with a double press, or the Logix GR's button LED, which only Home Assistant controls.
     """
 
     _attr_color_mode = ColorMode.RGB
@@ -167,7 +167,9 @@ class LogixStatusLight(LogixEntity, LightEntity):
     def __init__(self, coordinator: LogixCoordinator) -> None:
         """Initialize the entity."""
         super().__init__(coordinator, "status_light")
-        if coordinator.capabilities.get("momentary"):
+        if coordinator.model.light_translation_key:
+            self._attr_translation_key = coordinator.model.light_translation_key
+        elif coordinator.capabilities.get("momentary"):
             self._attr_translation_key = "button_light"  # the Logix GR's button LED
         elif coordinator.capabilities.get("outlets"):
             self._attr_translation_key = "light"  # a plug's night light, not a status indicator

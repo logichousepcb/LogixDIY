@@ -10,6 +10,7 @@ This list covers every Logix device the LogixDIY integration can set up, and wha
 | [Logix Plug](#logix-plug): plug-in smart plug, one outlet | `logixplug` | 1.0.0 | 1 | 1.3.0 | Supported |
 | [Logix RGB Plug](#logix-rgb-plug): plug-in smart plug with an RGB night light | `logixrgbplug` | 1.0.0 | 1 | 1.4.0 | Supported |
 | [Logix GR](#logix-gr): garage door relay with a button, RGB LED and temperature sensor | `logixgr` | 1.0.0 | 1 | 1.5.0 | Supported |
+| [Logix RGB Switch](#logix-rgb-switch): KAUF SRF10 in-wall RGB light switch | `logixrgbswitch` | 1.0.0 | 1 | 1.6.0 | Supported |
 
 **Model ID** is the `model` value the device reports in its mDNS TXT record and at `GET /api/info`. **API version** is the `api` value there. The integration refuses a device that reports a newer API version than it understands.
 
@@ -223,6 +224,41 @@ Also: device triggers for each button action, and the `logixdiy_button_action` b
 - There is no door position sensor, so there is no cover entity: the integration can pulse the relay but can't tell whether the door is open or closed.
 - The Logix GR's hold is 4 s; the device trigger's name still says "held for 3 seconds", the Logix 3's hold time.
 - A single press is reported about 0.4 s after the press, while the device waits to see whether another press follows.
+
+## Logix RGB Switch
+
+Replacement firmware for the KAUF SRF10 RGB wall switch (ESP8266EX, 1 MB). It has one relay, one button covering the whole face, and two RGB LEDs (behind the button and in its corner) that the firmware drives together as one light. A single press toggles the relay, a double press toggles the light. It has no energy meter. The HTTP API is the Logix RGB Plug's: the relay is outlet 1 with key `plug`.
+
+- **Firmware:** [logix-rgb-switch-firmware](https://github.com/logichousepcb/logix-rgb-switch-firmware), version 1.0.0 or later. Install it over Tasmota's web OTA form with the gzipped image.
+
+### Discovery
+
+| Method | Requirement |
+|---|---|
+| mDNS (`_logix._tcp`) | Device and Home Assistant on the same network segment |
+| MQTT (`logix/discovery/<id>`) | MQTT enabled on the device, using the same broker as Home Assistant's MQTT integration |
+| Manual | Device IP address or hostname, e.g. `kauff2.local` |
+
+### Entities
+
+| Entity | Count | Notes |
+|---|---|---|
+| Switch (named after the device) | 1 | The relay. Device class `switch`. |
+| Light: Button light | 1 | RGB, brightness, transitions, effects `pulse` and `fast_pulse` |
+| Event: Button 1 | 1 | Fires `single` (relay toggled) or `double` (light toggled) |
+| Button: Button 1 single press, Button 1 double press | 2 | Act like the physical button. Disabled by default. |
+| Button: Restart | 1 | |
+| Sensor: Wi-Fi signal | 1 | Diagnostic |
+| Sensor: IP address | 1 | Diagnostic. Disabled by default. |
+
+Also: the device triggers "Button 1 pressed once" and "Button 1 pressed twice", and the `logixdiy_button_action` bus event.
+
+### Known limitations
+
+- No energy monitoring: the hardware has no meter.
+- A single press takes effect about 0.4 s after the press, while the device waits to see whether a second press follows.
+- The two LEDs always show the same color; they can't be set separately.
+- The relay switches off for about 10 s while the device installs a firmware update.
 
 ## Adding a device
 
