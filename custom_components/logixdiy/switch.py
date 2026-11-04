@@ -1,6 +1,6 @@
-"""Switch entities: the Logix Outlet's outlets, named after their position (Top, Bottom), and
-the single outlet of the Logix Plug, Logix RGB Plug and Logix RGB Switch (its relay), which takes
-the device's own name."""
+"""Switch entities: the Logix Outlet's outlets, named after their position (Top, Bottom), the
+Logix Plug 3's three outlets (Outlet 1-3), and the single outlet of the Logix Plug, Logix RGB
+Plug and Logix RGB Switch (its relay), which takes the device's own name."""
 
 from __future__ import annotations
 

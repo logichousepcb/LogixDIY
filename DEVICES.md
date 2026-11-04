@@ -7,6 +7,7 @@ This list covers every Logix device the LogixDIY integration can set up, and wha
 | [Logix 3](#logix-3): three-button RGB scene controller | `logix3` | 1.2.0 | 1 | 1.0.0 | Supported |
 | [Logix Vent](#logix-vent): motorised vent controller | `logixvent` | 1.2.0 | 1 | 1.1.0 | Supported |
 | [Logix Outlet](#logix-outlet): in-wall duplex receptacle with energy monitoring | `logixoutlet` | 1.0.0 | 1 | 1.2.0 | Supported |
+| [Logix Plug 3](#logix-plug-3): KMC 4 Outlet smart power strip, three switched outlets with energy monitoring | `logixplug3` | 1.0.0 | 1 | 1.7.0 | Supported |
 | [Logix Plug](#logix-plug): plug-in smart plug, one outlet | `logixplug` | 1.0.0 | 1 | 1.3.0 | Supported |
 | [Logix RGB Plug](#logix-rgb-plug): plug-in smart plug with an RGB night light | `logixrgbplug` | 1.0.0 | 1 | 1.4.0 | Supported |
 | [Logix GR](#logix-gr): garage door relay with a button, RGB LED and temperature sensor | `logixgr` | 1.0.0 | 1 | 1.5.0 | Supported |
@@ -124,6 +125,45 @@ Also: device triggers "Button 1 pressed once" and "Button 2 pressed once", and t
 - The energy readings are only as accurate as the device's calibration. Calibrate it on the device's own settings page.
 - The outlets switch off for about 10 s while the device installs a firmware update.
 
+## Logix Plug 3
+
+Replacement firmware for the KMC 4 Outlet smart power strip (ESP8266EX, 1 MB). It has three switched outlets (plus one that is always on), one button for all of them, and an HLW8012 energy meter that measures the whole strip.
+
+- **Firmware:** [logix-plug3-firmware](https://github.com/logichousepcb/logix-plug3-firmware), version 1.0.0 or later. Install it over Tasmota's web OTA form with the gzipped image.
+
+### Discovery
+
+| Method | Requirement |
+|---|---|
+| mDNS (`_logix._tcp`) | Device and Home Assistant on the same network segment |
+| MQTT (`logix/discovery/<id>`) | MQTT enabled on the device, using the same broker as Home Assistant's MQTT integration |
+| Manual | Device IP address or hostname, e.g. `garage-4-outlet.local` |
+
+### Entities
+
+| Entity | Count | Notes |
+|---|---|---|
+| Switch: Outlet 1-3 | 3 | The outlets. Device class `outlet`. |
+| Sensor: Voltage, Current, Power | 3 | Energy meter, whole strip |
+| Sensor: Apparent power, Reactive power, Power factor | 3 | Disabled by default |
+| Sensor: Energy today, Energy yesterday, Energy total | 3 | kWh. Energy total is `total_increasing`, for the Energy dashboard. |
+| Event: Button 1 | 1 | Fires `single`, `double`, `triple` or `hold` |
+| Button: Button 1 single / double / triple press, hold | 4 | Act like the physical button: toggle outlet 1, 2 or 3, or switch all. Disabled by default. |
+| Button: Restart | 1 | |
+| Sensor: Wi-Fi signal | 1 | Diagnostic |
+| Sensor: IP address | 1 | Diagnostic. Disabled by default. |
+
+Also: device triggers "Button 1 pressed once / twice / three times" and "Button 1 held", and the `logixdiy_button_action` bus event.
+
+The button can be detached on the device's settings page. Then single, double and triple presses only fire events, for automations, and a hold still switches all outlets.
+
+### Known limitations
+
+- One meter measures the whole strip, so there is no per-outlet power.
+- The energy readings are only as accurate as the device's calibration. Calibrate it on the device's own settings page.
+- A single press takes effect about 0.4 s after the press, while the device waits to see whether another press follows.
+- The outlets switch off for about 10 s while the device installs a firmware update.
+
 ## Logix Plug
 
 Replacement firmware for the Geekbes YM-WS-1 plug-in smart plug (ESP8266EX, 1 MB). It has one switched outlet, one button that toggles it, and one LED. It has no energy meter.
@@ -222,7 +262,6 @@ Also: device triggers for each button action, and the `logixdiy_button_action` b
 ### Known limitations
 
 - There is no door position sensor, so there is no cover entity: the integration can pulse the relay but can't tell whether the door is open or closed.
-- The Logix GR's hold is 4 s; the device trigger's name still says "held for 3 seconds", the Logix 3's hold time.
 - A single press is reported about 0.4 s after the press, while the device waits to see whether another press follows.
 
 ## Logix RGB Switch

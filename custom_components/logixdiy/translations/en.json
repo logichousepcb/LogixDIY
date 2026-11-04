@@ -78,7 +78,7 @@
       "single": "{subtype} pressed once",
       "double": "{subtype} pressed twice",
       "triple": "{subtype} pressed three times",
-      "hold": "{subtype} held for 3 seconds"
+      "hold": "{subtype} held"
     },
     "trigger_subtype": {
       "button_1": "Button 1",
