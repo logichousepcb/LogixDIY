@@ -171,8 +171,8 @@ class TemperatureReading:
 
 @dataclass(frozen=True, slots=True)
 class OutletState:
-    """Parsed GET /api/controller of a Logix Outlet, Logix Plug 3, Logix Plug, Logix RGB Plug,
-    Logix RGB Switch or Logix GR.
+    """Parsed GET /api/controller of a Logix Outlet, Logix Plug 3, Logix Energy Plug, Logix Plug,
+    Logix RGB Plug, Logix RGB Switch or Logix GR.
 
     The Logix GR's one outlet is its momentary garage relay: on only during a pulse.
     """

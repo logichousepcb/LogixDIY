@@ -8,6 +8,7 @@ This list covers every Logix device the LogixDIY integration can set up, and wha
 | [Logix Vent](#logix-vent): motorised vent controller | `logixvent` | 1.2.0 | 1 | 1.1.0 | Supported |
 | [Logix Outlet](#logix-outlet): in-wall duplex receptacle with energy monitoring | `logixoutlet` | 1.0.0 | 1 | 1.2.0 | Supported |
 | [Logix Plug 3](#logix-plug-3): KMC 4 Outlet smart power strip, three switched outlets with energy monitoring | `logixplug3` | 1.0.0 | 1 | 1.7.0 | Supported |
+| [Logix Energy Plug](#logix-energy-plug): AWP04L plug-in smart plug with energy monitoring | `logixenergyplug` | 1.0.0 | 1 | 1.8.0 | Supported |
 | [Logix Plug](#logix-plug): plug-in smart plug, one outlet | `logixplug` | 1.0.0 | 1 | 1.3.0 | Supported |
 | [Logix RGB Plug](#logix-rgb-plug): plug-in smart plug with an RGB night light | `logixrgbplug` | 1.0.0 | 1 | 1.4.0 | Supported |
 | [Logix GR](#logix-gr): garage door relay with a button, RGB LED and temperature sensor | `logixgr` | 1.0.0 | 1 | 1.5.0 | Supported |
@@ -163,6 +164,45 @@ The button can be detached on the device's settings page. Then single, double an
 - The energy readings are only as accurate as the device's calibration. Calibrate it on the device's own settings page.
 - A single press takes effect about 0.4 s after the press, while the device waits to see whether another press follows.
 - The outlets switch off for about 10 s while the device installs a firmware update.
+
+## Logix Energy Plug
+
+Replacement firmware for the AWP04L plug-in smart plug (ESP8266EX, 1 MB). It has one switched outlet, one button, a power LED, a WiFi LED and a BL0937 energy meter.
+
+- **Firmware:** [logix-energy-plug-firmware](https://github.com/logichousepcb/logix-energy-plug-firmware), version 1.0.0 or later. On Tasmota 7.2.0, run `SetOption78 1` first (it turns off Tasmota's "Not compatible" check), then install it over Tasmota's web OTA form with the plain `firmware.bin`: that Tasmota can't take the gzipped image.
+
+### Discovery
+
+| Method | Requirement |
+|---|---|
+| mDNS (`_logix._tcp`) | Device and Home Assistant on the same network segment |
+| MQTT (`logix/discovery/<id>`) | MQTT enabled on the device, using the same broker as Home Assistant's MQTT integration |
+| Manual | Device IP address or hostname, e.g. `pow1725.local` |
+
+### Entities
+
+| Entity | Count | Notes |
+|---|---|---|
+| Switch (named after the device) | 1 | The outlet. Device class `outlet`. |
+| Sensor: Voltage, Current, Power | 3 | Energy meter |
+| Sensor: Apparent power, Reactive power, Power factor | 3 | Disabled by default |
+| Sensor: Energy today, Energy yesterday, Energy total | 3 | kWh. Energy total is `total_increasing`, for the Energy dashboard. |
+| Event: Button 1 | 1 | Fires `single`, `double`, `triple` or `hold` |
+| Button: Button 1 single / double / triple press, hold | 4 | Act like the physical button: a single press toggles the plug, the others are only reported. Disabled by default. |
+| Button: Restart | 1 | |
+| Sensor: Wi-Fi signal | 1 | Diagnostic |
+| Sensor: IP address | 1 | Diagnostic. Disabled by default. |
+
+Also: device triggers "Button 1 pressed once / twice / three times" and "Button 1 held", and the `logixdiy_button_action` bus event.
+
+The button can be detached on the device's settings page. Then a single press only fires an event, for automations, and a hold toggles the plug.
+
+### Known limitations
+
+- The energy readings are only as accurate as the device's calibration. Calibrate it on the device's own settings page.
+- Power and current read zero while the plug is off.
+- A single press takes effect about 0.4 s after the press, while the device waits to see whether another press follows.
+- The plug switches off for a few seconds while the device installs a firmware update.
 
 ## Logix Plug
 

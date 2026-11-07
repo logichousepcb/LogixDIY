@@ -16,6 +16,7 @@
 | Logix Vent: motorised vent controller | `logixvent` | [vent-controller-firmware](https://github.com/logichousepcb/vent-controller-firmware) 1.2.0 or later (API version 1) |
 | Logix Outlet: Gosund WO1 in-wall duplex receptacle with energy monitoring | `logixoutlet` | [logix-outlet-firmware](https://github.com/logichousepcb/logix-outlet-firmware) 1.0.0 or later (API version 1) |
 | Logix Plug 3: KMC 4 Outlet smart power strip with energy monitoring | `logixplug3` | [logix-plug3-firmware](https://github.com/logichousepcb/logix-plug3-firmware) 1.0.0 or later (API version 1) |
+| Logix Energy Plug: AWP04L plug-in smart plug with energy monitoring | `logixenergyplug` | [logix-energy-plug-firmware](https://github.com/logichousepcb/logix-energy-plug-firmware) 1.0.0 or later (API version 1) |
 | Logix Plug: Geekbes YM-WS-1 plug-in smart plug | `logixplug` | [logix-plug-firmware](https://github.com/logichousepcb/logix-plug-firmware) 1.0.0 or later (API version 1) |
 | Logix RGB Plug: plug-in smart plug with an RGB night light | `logixrgbplug` | [logix-rgb-plug-firmware](https://github.com/logichousepcb/logix-rgb-plug-firmware) 1.0.0 or later (API version 1) |
 | Logix GR: garage door relay with a button, RGB LED and temperature sensor | `logixgr` | [logix-gr-firmware](https://github.com/logichousepcb/logix-gr-firmware) 1.0.0 or later (API version 1) |
@@ -135,6 +136,20 @@ A device named on its own settings page (e.g. "Family Room Outlet") is added und
 |---|---|---|
 | `switch.<device>_outlet_1` … `_outlet_3` | 3 | The three switched outlets. The button switches them too, with or without Home Assistant: press once, twice or three times for outlet 1, 2 or 3, hold for all. |
 | `sensor.<device>_voltage`, `_current`, `_power` | 3 | Live readings from the energy meter (whole strip) |
+| `sensor.<device>_apparent_power`, `_reactive_power`, `_power_factor` | 3 | **Disabled by default.** |
+| `sensor.<device>_energy_today`, `_energy_yesterday` | 2 | kWh. Today resets at local midnight on the device. |
+| `sensor.<device>_energy_total` | 1 | kWh. Use this one in the **Energy dashboard**. Attribute `total_start_time` says when it started counting. |
+| `event.<device>_button_1` | 1 | Fires `single`, `double`, `triple` or `hold` for each button action |
+| `button.<device>_button_1_<action>` | 4 | Act like the physical button. **Disabled by default.** |
+| `button.<device>_restart` | 1 | Restarts the device |
+| `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
+
+## What you get (Logix Energy Plug)
+
+| Entity | Count | Description |
+|---|---|---|
+| `switch.<device>` | 1 | The plug's outlet, named after the device (e.g. `switch.dehumidifier`). A single press of the physical button toggles it too, with or without Home Assistant. |
+| `sensor.<device>_voltage`, `_current`, `_power` | 3 | Live readings from the energy meter |
 | `sensor.<device>_apparent_power`, `_reactive_power`, `_power_factor` | 3 | **Disabled by default.** |
 | `sensor.<device>_energy_today`, `_energy_yesterday` | 2 | kWh. Today resets at local midnight on the device. |
 | `sensor.<device>_energy_total` | 1 | kWh. Use this one in the **Energy dashboard**. Attribute `total_start_time` says when it started counting. |
