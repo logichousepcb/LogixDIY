@@ -21,6 +21,7 @@
 | Logix RGB Plug: plug-in smart plug with an RGB night light | `logixrgbplug` | [logix-rgb-plug-firmware](https://github.com/logichousepcb/logix-rgb-plug-firmware) 1.0.0 or later (API version 1) |
 | Logix GR: garage door relay with a button, RGB LED and temperature sensor | `logixgr` | [logix-gr-firmware](https://github.com/logichousepcb/logix-gr-firmware) 1.0.0 or later (API version 1) |
 | Logix RGB Switch: KAUF SRF10 in-wall RGB light switch | `logixrgbswitch` | [logix-rgb-switch-firmware](https://github.com/logichousepcb/logix-rgb-switch-firmware) 1.0.0 or later (API version 1) |
+| Logix Temp: Wemos D1 mini with a DS18B20 temperature sensor | `logixtemp` | [logix-temp-firmware](https://github.com/logichousepcb/logix-temp-firmware) 1.0.0 or later (API version 1) |
 
 See **[DEVICES.md](DEVICES.md)** for each device's requirements, entities and known limitations. More Logix devices will be added over time.
 
@@ -210,11 +211,23 @@ The relay is a button, not a switch or cover: it opens again by itself, and the 
 
 The switch has no energy meter, so there are no energy sensors.
 
+## What you get (Logix Temp)
+
+| Entity | Count | Description |
+|---|---|---|
+| `sensor.<device>` | 1 | The DS18B20, named after the device (e.g. `sensor.garage_temperature`), with the offset set on the device. Shown in your unit system. Attributes: the probe's ROM `address`, and `min_celsius` / `max_celsius` since the device booted. Unavailable while the probe isn't answering. |
+| `sensor.<device>_temperature_N` | 0-3 | Further DS18B20s on the same bus, if any |
+| `button.<device>_read_now` | 1 | Takes a reading now instead of at the device's next interval |
+| `button.<device>_restart` | 1 | Restarts the device |
+| `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
+
+It has no buttons, so there are no events or device triggers. Without MQTT it is polled every 10 s rather than every second (the device reads every 10 s by default).
+
 ## How it talks to the device
 
 - **Commands** always go over the device's HTTP API.
 - **State and button actions** are pushed over MQTT when the device has MQTT enabled and Home Assistant's MQTT integration is connected to the same broker. Polling then drops to once a minute, only to resync and read diagnostics.
-- **Without MQTT,** the integration polls `GET /api/controller` every second, and detects button actions from changes in each button's `actionCount`. If a button completes several actions between two polls, only the last one is reported. Set a shorter interval, or use MQTT, if that matters for you.
+- **Without MQTT,** the integration polls `GET /api/controller` every second (every 10 s for a Logix Temp, which has no buttons), and detects button actions from changes in each button's `actionCount`. If a button completes several actions between two polls, only the last one is reported. Set a shorter interval, or use MQTT, if that matters for you.
 
 Both settings live under **Configure** on the integration: MQTT on or off, and the poll interval (0.5-60 s).
 

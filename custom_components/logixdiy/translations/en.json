@@ -97,7 +97,8 @@
       "press_double": { "name": "Button {button} double press" },
       "press_triple": { "name": "Button {button} triple press" },
       "press_hold": { "name": "Button {button} hold" },
-      "trigger": { "name": "Trigger" }
+      "trigger": { "name": "Trigger" },
+      "read_now": { "name": "Read now" }
     },
     "event": {
       "button": {
@@ -186,6 +187,14 @@
     "sensor": {
       "wifi_signal": { "name": "Wi-Fi signal" },
       "ip_address": { "name": "IP address" },
+      "probe": {
+        "name": "Temperature {probe}",
+        "state_attributes": {
+          "address": { "name": "Address" },
+          "min_celsius": { "name": "Minimum since boot (°C)" },
+          "max_celsius": { "name": "Maximum since boot (°C)" }
+        }
+      },
       "energy_today": { "name": "Energy today" },
       "energy_yesterday": { "name": "Energy yesterday" },
       "energy_total": {

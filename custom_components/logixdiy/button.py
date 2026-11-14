@@ -1,5 +1,5 @@
-"""Button entities: simulate a button action, trigger the Logix GR's garage relay, and restart
-the device."""
+"""Button entities: simulate a button action, trigger the Logix GR's garage relay, take a Logix
+Temp reading now, and restart the device."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from .api import TempState
 from .coordinator import LogixConfigEntry, LogixCoordinator
 from .entity import LogixEntity
 
@@ -28,6 +29,8 @@ async def async_setup_entry(
     ]
     if coordinator.capabilities.get("momentary"):
         entities.append(LogixTriggerButton(coordinator))
+    if isinstance(coordinator.data, TempState):
+        entities.append(LogixReadButton(coordinator))
     entities.append(LogixRestartButton(coordinator))
     async_add_entities(entities)
 
@@ -67,6 +70,21 @@ class LogixTriggerButton(LogixEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Pulse the relay."""
         await self.coordinator.async_command(self.coordinator.client.trigger())
+
+
+class LogixReadButton(LogixEntity, ButtonEntity):
+    """Logix Temp: read the probes now instead of at the next interval."""
+
+    _attr_translation_key = "read_now"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: LogixCoordinator) -> None:
+        """Initialize the entity."""
+        super().__init__(coordinator, "read_now")
+
+    async def async_press(self) -> None:
+        """Start a reading; the result arrives over MQTT or with the next poll."""
+        await self.coordinator.async_command(self.coordinator.client.read_now())
 
 
 class LogixRestartButton(LogixEntity, ButtonEntity):

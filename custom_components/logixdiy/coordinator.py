@@ -29,7 +29,6 @@ from .const import (
     ATTR_BUTTON,
     CONF_SCAN_INTERVAL,
     CONF_USE_MQTT,
-    DEFAULT_SCAN_INTERVAL,
     DEFAULT_USE_MQTT,
     DOMAIN,
     EVENT_BUTTON_ACTION,
@@ -60,7 +59,10 @@ class LogixCoordinator(DataUpdateCoordinator[LogixState]):
         self, hass: HomeAssistant, entry: LogixConfigEntry, client: LogixClient, info: dict[str, Any]
     ) -> None:
         """Initialize the coordinator."""
-        self._poll_interval = timedelta(seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
+        model = MODELS[info["model"]]
+        self._poll_interval = timedelta(
+            seconds=entry.options.get(CONF_SCAN_INTERVAL, model.default_scan_interval)
+        )
         super().__init__(
             hass,
             LOGGER,
@@ -71,7 +73,7 @@ class LogixCoordinator(DataUpdateCoordinator[LogixState]):
         )
         self.client = client
         self.info = info
-        self.model: LogixModel = MODELS[info["model"]]
+        self.model: LogixModel = model
         self.device_id: str | None = None
         self.status: dict[str, Any] | None = None
         self.push_active = False

@@ -15,8 +15,8 @@ from typing import Any
 from homeassistant.components.switch import SwitchDeviceClass
 from homeassistant.const import Platform
 
-from .api import ControllerState, LogixState, OutletState, VentState
-from .const import SUPPORTED_API_VERSION
+from .api import ControllerState, LogixState, OutletState, TempState, VentState
+from .const import DEFAULT_SCAN_INTERVAL, SUPPORTED_API_VERSION
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +31,9 @@ class LogixModel:
     outlet_device_class: SwitchDeviceClass = SwitchDeviceClass.OUTLET
     # Name of the statusLight entity, if the capabilities alone don't tell (see light.py).
     light_translation_key: str | None = None
+    # Poll interval without MQTT, unless the user sets one. Devices with buttons poll every
+    # second to catch presses; a sensor that reads every 10 s needs far less.
+    default_scan_interval: float = DEFAULT_SCAN_INTERVAL
 
 
 MODELS: dict[str, LogixModel] = {
@@ -141,6 +144,16 @@ MODELS: dict[str, LogixModel] = {
                 Platform.SENSOR,
             ),
             parse_state=OutletState.from_json,
+        ),
+        LogixModel(
+            model="logixtemp",
+            name="Logix Temp",
+            platforms=(
+                Platform.BUTTON,
+                Platform.SENSOR,
+            ),
+            parse_state=TempState.from_json,
+            default_scan_interval=10.0,
         ),
     )
 }

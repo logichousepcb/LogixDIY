@@ -5,7 +5,8 @@
       "press_double": { "default": "mdi:gesture-double-tap" },
       "press_triple": { "default": "mdi:gesture-tap-hold" },
       "press_hold": { "default": "mdi:timer-sand" },
-      "trigger": { "default": "mdi:garage-variant" }
+      "trigger": { "default": "mdi:garage-variant" },
+      "read_now": { "default": "mdi:thermometer-refresh" }
     },
     "event": {
       "button": { "default": "mdi:gesture-tap-button" }

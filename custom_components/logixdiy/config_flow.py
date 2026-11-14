@@ -244,10 +244,13 @@ class LogixOptionsFlow(OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(data=user_input)
 
+        # The model's own default (10 s for a Logix Temp, 1 s for devices with buttons).
+        coordinator = getattr(self.config_entry, "runtime_data", None)
+        default_interval = coordinator.model.default_scan_interval if coordinator else DEFAULT_SCAN_INTERVAL
         schema = vol.Schema(
             {
                 vol.Required(CONF_USE_MQTT, default=DEFAULT_USE_MQTT): bool,
-                vol.Required(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): NumberSelector(
+                vol.Required(CONF_SCAN_INTERVAL, default=default_interval): NumberSelector(
                     NumberSelectorConfig(
                         min=0.5,
                         max=60,

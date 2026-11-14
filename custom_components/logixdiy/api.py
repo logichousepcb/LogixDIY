@@ -216,7 +216,51 @@ class OutletState:
             raise LogixConnectionError(f"Unexpected outlet state: {err!r}") from err
 
 
-type LogixState = ControllerState | VentState | OutletState
+def _optional_float(value: Any) -> float | None:
+    return None if value is None else float(value)
+
+
+@dataclass(frozen=True, slots=True)
+class ProbeReading:
+    """One DS18B20 of a Logix Temp."""
+
+    key: str  # temp, temp2, ...
+    name: str
+    address: str  # ROM address, 16 hex digits
+    celsius: float | None  # with the device's calibration offset; None while offline
+    min_celsius: float | None  # since the device booted
+    max_celsius: float | None
+
+
+@dataclass(frozen=True, slots=True)
+class TempState:
+    """Parsed GET /api/controller of a Logix Temp (or its MQTT state topic)."""
+
+    probes: tuple[ProbeReading, ...]
+    buttons: tuple[ButtonState, ...] = ()  # none; here for the coordinator's action tracking
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> TempState:
+        """Build from the device's JSON; raises LogixConnectionError if it is malformed."""
+        try:
+            return cls(
+                probes=tuple(
+                    ProbeReading(
+                        key=s["key"],
+                        name=s["name"],
+                        address=s["address"],
+                        celsius=_optional_float(s["temperatureC"]) if s["online"] else None,
+                        min_celsius=_optional_float(s.get("minC")),
+                        max_celsius=_optional_float(s.get("maxC")),
+                    )
+                    for s in data["sensors"]
+                ),
+            )
+        except (KeyError, TypeError, ValueError, IndexError) as err:
+            raise LogixConnectionError(f"Unexpected temperature state: {err!r}") from err
+
+
+type LogixState = ControllerState | VentState | OutletState | TempState
 
 
 class LogixClient:
@@ -311,6 +355,10 @@ class LogixClient:
     async def trigger(self) -> None:
         """Logix GR: pulse the garage relay, like pressing the door's wall button."""
         await self._request("POST", "/api/trigger")
+
+    async def read_now(self) -> None:
+        """Logix Temp: take a reading now instead of waiting for the next interval."""
+        await self._request("POST", "/api/controller/read")
 
     async def reboot(self) -> None:
         """Restart the device."""

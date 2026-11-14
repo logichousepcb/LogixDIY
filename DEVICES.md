@@ -13,6 +13,7 @@ This list covers every Logix device the LogixDIY integration can set up, and wha
 | [Logix RGB Plug](#logix-rgb-plug): plug-in smart plug with an RGB night light | `logixrgbplug` | 1.0.0 | 1 | 1.4.0 | Supported |
 | [Logix GR](#logix-gr): garage door relay with a button, RGB LED and temperature sensor | `logixgr` | 1.0.0 | 1 | 1.5.0 | Supported |
 | [Logix RGB Switch](#logix-rgb-switch): KAUF SRF10 in-wall RGB light switch | `logixrgbswitch` | 1.0.0 | 1 | 1.6.0 | Supported |
+| [Logix Temp](#logix-temp): Wemos D1 mini with a DS18B20 temperature sensor | `logixtemp` | 1.0.0 | 1 | 1.9.0 | Supported |
 
 **Model ID** is the `model` value the device reports in its mDNS TXT record and at `GET /api/info`. **API version** is the `api` value there. The integration refuses a device that reports a newer API version than it understands.
 
@@ -338,6 +339,40 @@ Also: the device triggers "Button 1 pressed once" and "Button 1 pressed twice", 
 - A single press takes effect about 0.4 s after the press, while the device waits to see whether a second press follows.
 - The two LEDs always show the same color; they can't be set separately.
 - The relay switches off for about 10 s while the device installs a firmware update.
+
+## Logix Temp
+
+Replacement firmware for a Wemos D1 mini (ESP8266EX, 4 MB) with a DS18B20 temperature sensor on D3 (GPIO0). It only reports the temperature: no relay, no button. Up to 4 DS18B20s on the same bus are reported; one is the normal case.
+
+- **Firmware:** [logix-temp-firmware](https://github.com/logichousepcb/logix-temp-firmware), version 1.0.0 or later. It replaces ESPHome; the garage unit's ESPHome 1.14.4 had no OTA or web server, so the first install was over USB.
+
+### Discovery
+
+| Method | Requirement |
+|---|---|
+| mDNS (`_logix._tcp`) | Device and Home Assistant on the same network segment |
+| MQTT (`logix/discovery/<id>`) | MQTT enabled on the device, using the same broker as Home Assistant's MQTT integration |
+| Manual | Device IP address or hostname, e.g. `garage-temperature.local` |
+
+### Entities
+
+| Entity | Count | Notes |
+|---|---|---|
+| Sensor (named after the device) | 1 | Probe 1 in °C from the device, shown in your unit system. Attributes `address`, `min_celsius`, `max_celsius`. Unavailable while the probe isn't answering (3 failed readings in a row on the device) or isn't found. |
+| Sensor: Temperature N | 0-3 | Further probes on the bus, numbered in the device's search order (by ROM address) |
+| Button: Read now | 1 | Starts a reading at once. Config category. |
+| Button: Restart | 1 | |
+| Sensor: Wi-Fi signal | 1 | Diagnostic |
+| Sensor: IP address | 1 | Diagnostic. Disabled by default. |
+
+No events or device triggers: the device has no buttons.
+
+### Known limitations
+
+- The device's °F/°C setting only changes its own web page. Home Assistant always reads °C and converts to your unit system.
+- Without MQTT the default poll interval is 10 s (set under **Configure**). The device reads every 10 s by default (2-3600 s on its Settings page).
+- Probes added to the bus after setup get entities only after the integration is reloaded. Probe 1's sensor always exists, even if no probe was found at setup.
+- The device's min/max reset when it restarts.
 
 ## Adding a device
 

@@ -1,5 +1,5 @@
-"""Sensors: diagnostics from /api/status, the Logix Outlet's energy meter and the Logix GR's
-temperature."""
+"""Sensors: diagnostics from /api/status, the Logix Outlet's energy meter, the Logix GR's
+temperature and the Logix Temp's probes."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import EnergyReading, OutletState
+from .api import EnergyReading, OutletState, ProbeReading, TempState
 from .coordinator import LogixConfigEntry, LogixCoordinator
 from .entity import LogixEntity
 
@@ -160,7 +160,12 @@ async def async_setup_entry(
     entities: list[SensorEntity] = [LogixStatusSensor(coordinator, description) for description in SENSORS]
     if coordinator.capabilities.get("energy"):
         entities.extend(LogixEnergySensor(coordinator, description) for description in ENERGY_SENSORS)
-    if coordinator.capabilities.get("temperature"):
+    if isinstance(coordinator.data, TempState):
+        # At least probe 1, so the entity exists (unavailable) even if the sensor was missing
+        # when Home Assistant started.
+        count = max(1, coordinator.capabilities.get("sensors", 0), len(coordinator.data.probes))
+        entities.extend(LogixProbeSensor(coordinator, index) for index in range(count))
+    elif coordinator.capabilities.get("temperature"):
         entities.append(LogixTemperatureSensor(coordinator))
     async_add_entities(entities)
 
@@ -240,3 +245,52 @@ class LogixTemperatureSensor(LogixEntity, SensorEntity):
     def native_value(self) -> float | None:
         """Temperature in °C."""
         return self._celsius
+
+
+class LogixProbeSensor(LogixEntity, SensorEntity):
+    """One DS18B20 of a Logix Temp, with the offset set on the device.
+
+    Probe 1 is named after the device (e.g. "Garage Temperature"); further probes on the same
+    bus are "Temperature 2", "Temperature 3", ...
+    """
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 1
+
+    def __init__(self, coordinator: LogixCoordinator, index: int) -> None:
+        """Initialize the entity."""
+        super().__init__(coordinator, "temperature" if index == 0 else f"temperature_{index + 1}")
+        self._index = index
+        if index == 0:
+            self._attr_name = None
+        else:
+            self._attr_translation_key = "probe"
+            self._attr_translation_placeholders = {"probe": str(index + 1)}
+
+    @property
+    def _probe(self) -> ProbeReading | None:
+        state: TempState = self.coordinator.data  # type: ignore[assignment]
+        return state.probes[self._index] if self._index < len(state.probes) else None
+
+    @property
+    def available(self) -> bool:
+        """Unavailable while the probe is missing or not answering."""
+        return super().available and (probe := self._probe) is not None and probe.celsius is not None
+
+    @property
+    def native_value(self) -> float | None:
+        """Temperature in °C."""
+        return probe.celsius if (probe := self._probe) else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """The probe's ROM address and the range seen since the device booted, in °C."""
+        if not (probe := self._probe):
+            return None
+        return {
+            "address": probe.address,
+            "min_celsius": probe.min_celsius,
+            "max_celsius": probe.max_celsius,
+        }
