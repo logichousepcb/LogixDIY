@@ -98,6 +98,18 @@ MODELS: dict[str, LogixModel] = {
             parse_state=OutletState.from_json,
         ),
         LogixModel(
+            # Sonoff S31: the Logix Energy Plug's API on a CSE7766 meter.
+            model="logixs31",
+            name="Logix S31 Plug",
+            platforms=(
+                Platform.BUTTON,
+                Platform.EVENT,
+                Platform.SENSOR,
+                Platform.SWITCH,
+            ),
+            parse_state=OutletState.from_json,
+        ),
+        LogixModel(
             model="logixplug",
             name="Logix Plug",
             platforms=(
@@ -133,6 +145,21 @@ MODELS: dict[str, LogixModel] = {
             parse_state=OutletState.from_json,
             outlet_device_class=SwitchDeviceClass.SWITCH,
             light_translation_key="button_light",  # the RGB light behind the button face
+        ),
+        LogixModel(
+            # Moes 3-way wall switch. Its one outlet is the light: the state is what the device
+            # senses on the light circuit, so it follows the other 3-way switch too, and the
+            # device moves its traveler relay only when the light has to change.
+            model="logix3way",
+            name="Logix 3-Way Switch",
+            platforms=(
+                Platform.BUTTON,
+                Platform.EVENT,
+                Platform.SENSOR,
+                Platform.SWITCH,
+            ),
+            parse_state=OutletState.from_json,
+            outlet_device_class=SwitchDeviceClass.SWITCH,
         ),
         LogixModel(
             model="logixgr",

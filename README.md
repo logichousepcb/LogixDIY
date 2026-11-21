@@ -17,11 +17,13 @@
 | Logix Outlet: Gosund WO1 in-wall duplex receptacle with energy monitoring | `logixoutlet` | [logix-outlet-firmware](https://github.com/logichousepcb/logix-outlet-firmware) 1.0.0 or later (API version 1) |
 | Logix Plug 3: KMC 4 Outlet smart power strip with energy monitoring | `logixplug3` | [logix-plug3-firmware](https://github.com/logichousepcb/logix-plug3-firmware) 1.0.0 or later (API version 1) |
 | Logix Energy Plug: AWP04L plug-in smart plug with energy monitoring | `logixenergyplug` | [logix-energy-plug-firmware](https://github.com/logichousepcb/logix-energy-plug-firmware) 1.0.0 or later (API version 1) |
+| Logix S31 Plug: Sonoff S31 plug-in smart plug with energy monitoring | `logixs31` | logix-s31-firmware 1.0.0 or later (API version 1) |
 | Logix Plug: Geekbes YM-WS-1 plug-in smart plug | `logixplug` | [logix-plug-firmware](https://github.com/logichousepcb/logix-plug-firmware) 1.0.0 or later (API version 1) |
 | Logix RGB Plug: plug-in smart plug with an RGB night light | `logixrgbplug` | [logix-rgb-plug-firmware](https://github.com/logichousepcb/logix-rgb-plug-firmware) 1.0.0 or later (API version 1) |
 | Logix GR: garage door relay with a button, RGB LED and temperature sensor | `logixgr` | [logix-gr-firmware](https://github.com/logichousepcb/logix-gr-firmware) 1.0.0 or later (API version 1) |
 | Logix RGB Switch: KAUF SRF10 in-wall RGB light switch | `logixrgbswitch` | [logix-rgb-switch-firmware](https://github.com/logichousepcb/logix-rgb-switch-firmware) 1.0.0 or later (API version 1) |
 | Logix Temp: Wemos D1 mini with a DS18B20 temperature sensor | `logixtemp` | [logix-temp-firmware](https://github.com/logichousepcb/logix-temp-firmware) 1.0.0 or later (API version 1) |
+| Logix 3-Way Switch: Moes 3-way wall switch | `logix3way` | logix-3way-firmware 1.0.0 or later (API version 1) |
 
 See **[DEVICES.md](DEVICES.md)** for each device's requirements, entities and known limitations. More Logix devices will be added over time.
 
@@ -159,6 +161,10 @@ A device named on its own settings page (e.g. "Family Room Outlet") is added und
 | `button.<device>_restart` | 1 | Restarts the device |
 | `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
 
+## What you get (Logix S31 Plug)
+
+The same entities as the [Logix Energy Plug](#what-you-get-logix-energy-plug): `switch.<device>`, the voltage, current, power and energy sensors (apparent power, reactive power and power factor disabled by default), `event.<device>_button_1`, the four simulated button presses (disabled by default), Restart, and the Wi-Fi signal and IP address diagnostics.
+
 ## What you get (Logix Plug)
 
 | Entity | Count | Description |
@@ -222,6 +228,18 @@ The switch has no energy meter, so there are no energy sensors.
 | `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
 
 It has no buttons, so there are no events or device triggers. Without MQTT it is polled every 10 s rather than every second (the device reads every 10 s by default).
+
+## What you get (Logix 3-Way Switch)
+
+| Entity | Count | Description |
+|---|---|---|
+| `switch.<device>` | 1 | The light, named after the device (e.g. `switch.laundry_light`), device class `switch`. Its state is what the device senses on the light circuit, so it follows the other 3-way switch too. On and off move the traveler relay only when the light has to change. |
+| `event.<device>_button_1` | 1 | Fires `single`, `double`, `triple` or `hold`. A single press toggles the light; the others switch nothing. |
+| `button.<device>_button_1_single_press` … `_hold` | 4 | Simulate the button's actions. **Disabled by default.** |
+| `button.<device>_restart` | 1 | Restarts the device |
+| `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
+
+To have it show up as a light, open the switch's settings in Home Assistant and set **Show as** to **Light**.
 
 ## How it talks to the device
 

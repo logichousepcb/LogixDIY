@@ -9,11 +9,13 @@ This list covers every Logix device the LogixDIY integration can set up, and wha
 | [Logix Outlet](#logix-outlet): in-wall duplex receptacle with energy monitoring | `logixoutlet` | 1.0.0 | 1 | 1.2.0 | Supported |
 | [Logix Plug 3](#logix-plug-3): KMC 4 Outlet smart power strip, three switched outlets with energy monitoring | `logixplug3` | 1.0.0 | 1 | 1.7.0 | Supported |
 | [Logix Energy Plug](#logix-energy-plug): AWP04L plug-in smart plug with energy monitoring | `logixenergyplug` | 1.0.0 | 1 | 1.8.0 | Supported |
+| [Logix S31 Plug](#logix-s31-plug): Sonoff S31 plug-in smart plug with energy monitoring | `logixs31` | 1.0.0 | 1 | 1.10.0 | Supported |
 | [Logix Plug](#logix-plug): plug-in smart plug, one outlet | `logixplug` | 1.0.0 | 1 | 1.3.0 | Supported |
 | [Logix RGB Plug](#logix-rgb-plug): plug-in smart plug with an RGB night light | `logixrgbplug` | 1.0.0 | 1 | 1.4.0 | Supported |
 | [Logix GR](#logix-gr): garage door relay with a button, RGB LED and temperature sensor | `logixgr` | 1.0.0 | 1 | 1.5.0 | Supported |
 | [Logix RGB Switch](#logix-rgb-switch): KAUF SRF10 in-wall RGB light switch | `logixrgbswitch` | 1.0.0 | 1 | 1.6.0 | Supported |
 | [Logix Temp](#logix-temp): Wemos D1 mini with a DS18B20 temperature sensor | `logixtemp` | 1.0.0 | 1 | 1.9.0 | Supported |
+| [Logix 3-Way Switch](#logix-3-way-switch): Moes 3-way wall switch | `logix3way` | 1.0.0 | 1 | 1.10.0 | Supported |
 
 **Model ID** is the `model` value the device reports in its mDNS TXT record and at `GET /api/info`. **API version** is the `api` value there. The integration refuses a device that reports a newer API version than it understands.
 
@@ -205,6 +207,31 @@ The button can be detached on the device's settings page. Then a single press on
 - A single press takes effect about 0.4 s after the press, while the device waits to see whether another press follows.
 - The plug switches off for a few seconds while the device installs a firmware update.
 
+## Logix S31 Plug
+
+Replacement firmware for the Sonoff S31 plug-in smart plug (ESP8266EX). It has one switched outlet, one button, a red LED wired to the relay, a blue WiFi LED and a CSE7766 energy meter. The HTTP and MQTT API is the Logix Energy Plug's, with model `logixs31`.
+
+- **Firmware:** logix-s31-firmware, version 1.0.0 or later. It installs over ESPHome's web OTA (`web_server` with OTA on) with `firmware.bin.gz`. ESPHome compiles its WiFi into the image, so after the install the plug starts its setup AP `Logix-S31-XXXX` (unless the firmware was built with `secrets.ini`), and WiFi is set at `http://192.168.4.1`.
+
+### Discovery
+
+| Method | Requirement |
+|---|---|
+| mDNS (`_logix._tcp`) | Device and Home Assistant on the same network segment |
+| MQTT (`logix/discovery/<id>`) | MQTT enabled on the device, using the same broker as Home Assistant's MQTT integration |
+| Manual | Device IP address or hostname, e.g. `logix-s31-plug-2af9.local` |
+
+### Entities
+
+The same as the [Logix Energy Plug](#logix-energy-plug): the outlet switch (device class `outlet`), Voltage, Current and Power, Apparent power, Reactive power and Power factor (disabled by default), Energy today, yesterday and total, the Button 1 event, the four simulated button presses (disabled by default), Restart, and the Wi-Fi signal and IP address diagnostics. The device triggers and the `logixdiy_button_action` bus event are the same too.
+
+### Known limitations
+
+- The readings use the CSE7766's factory calibration, which the chip sends with every reading. Fine-tune it on the device's own settings page.
+- Power and current read zero while the plug is off. Below about 50 mA the chip gives no current reading, so the device reports power / voltage instead.
+- A single press takes effect about 0.4 s after the press, while the device waits to see whether another press follows.
+- Replacing ESPHome leaves its entities in Home Assistant unavailable. Remove the old ESPHome device.
+
 ## Logix Plug
 
 Replacement firmware for the Geekbes YM-WS-1 plug-in smart plug (ESP8266EX, 1 MB). It has one switched outlet, one button that toggles it, and one LED. It has no energy meter.
@@ -373,6 +400,42 @@ No events or device triggers: the device has no buttons.
 - Without MQTT the default poll interval is 10 s (set under **Configure**). The device reads every 10 s by default (2-3600 s on its Settings page).
 - Probes added to the bus after setup get entities only after the integration is reloaded. Probe 1's sensor always exists, even if no probe was found at setup.
 - The device's min/max reset when it restarts.
+
+## Logix 3-Way Switch
+
+Replacement firmware for the Moes 3-way wall switch (ESP8266EX, 1 MB, Tasmota template "Moes 3-Way"). It has a traveler relay, a sense input that reads whether the light circuit has power, one button and one LED. A 3-way switch can't turn the light on or off by itself, only move its relay to the other traveler, so the light's state comes from the sense input, and on and off move the relay only when the light has to change. The HTTP API is the Logix Plug's: the light is outlet 1 with key `light`.
+
+- **Firmware:** logix-3way-firmware, version 1.0.0 or later. Install it over Tasmota's web OTA form with the gzipped image.
+
+### Discovery
+
+| Method | Requirement |
+|---|---|
+| mDNS (`_logix._tcp`) | Device and Home Assistant on the same network segment |
+| MQTT (`logix/discovery/<id>`) | MQTT enabled on the device, using the same broker as Home Assistant's MQTT integration |
+| Manual | Device IP address or hostname, e.g. `laundry-light.local` |
+
+### Entities
+
+| Entity | Count | Notes |
+|---|---|---|
+| Switch (named after the device) | 1 | The light, as sensed. Device class `switch`. Set **Show as: Light** in its settings to use it as a light. |
+| Event: Button 1 | 1 | Fires `single`, `double`, `triple` or `hold` |
+| Button: Button 1 single / double / triple press, hold | 4 | Act like the physical button: a single press toggles the light, the others are only reported. Disabled by default. |
+| Button: Restart | 1 | |
+| Sensor: Wi-Fi signal | 1 | Diagnostic |
+| Sensor: IP address | 1 | Diagnostic. Disabled by default. |
+
+Also: device triggers "Button 1 pressed once / twice / three times" and "Button 1 held", and the `logixdiy_button_action` bus event.
+
+The button can be detached on the device's settings page. Then a single press only fires an event, for automations, and a hold toggles the light.
+
+### Known limitations
+
+- No energy monitoring: the hardware has no meter.
+- A change made at the other 3-way switch shows up through MQTT within about 0.1 s; without MQTT, at the next poll.
+- With no power on the light circuit (a tripped breaker, say) the light reads off, and turning it on moves the relay without effect.
+- A single press takes effect about 0.4 s after the press, while the device waits to see whether another press follows.
 
 ## Adding a device
 
