@@ -1,5 +1,5 @@
 """Button entities: simulate a button action, trigger the Logix GR's garage relay, take a Logix
-Temp reading now, and restart the device."""
+Temp reading now, blink a Logix Fixture to identify it, and restart the device."""
 
 from __future__ import annotations
 
@@ -31,6 +31,8 @@ async def async_setup_entry(
         entities.append(LogixTriggerButton(coordinator))
     if isinstance(coordinator.data, TempState):
         entities.append(LogixReadButton(coordinator))
+    if coordinator.capabilities.get("identify"):
+        entities.append(LogixIdentifyButton(coordinator))
     entities.append(LogixRestartButton(coordinator))
     async_add_entities(entities)
 
@@ -85,6 +87,21 @@ class LogixReadButton(LogixEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Start a reading; the result arrives over MQTT or with the next poll."""
         await self.coordinator.async_command(self.coordinator.client.read_now())
+
+
+class LogixIdentifyButton(LogixEntity, ButtonEntity):
+    """Logix Fixture: blink the LEDs white for about 3 seconds, then restore them."""
+
+    _attr_device_class = ButtonDeviceClass.IDENTIFY
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: LogixCoordinator) -> None:
+        """Initialize the entity."""
+        super().__init__(coordinator, "identify")
+
+    async def async_press(self) -> None:
+        """Blink the LEDs."""
+        await self.coordinator.async_command(self.coordinator.client.identify())
 
 
 class LogixRestartButton(LogixEntity, ButtonEntity):

@@ -50,7 +50,8 @@ class LogixCoordinator(DataUpdateCoordinator[LogixState]):
     """Keeps one device's state current and turns its button actions into events.
 
     The data is the model's state class (ControllerState for a Logix 3, VentState for a Logix
-    Vent); each model's platforms only read the fields of their own state class.
+    Vent, FixtureState for a Logix Fixture); each model's platforms only read the fields of their
+    own state class.
     """
 
     config_entry: LogixConfigEntry
@@ -115,7 +116,7 @@ class LogixCoordinator(DataUpdateCoordinator[LogixState]):
 
     async def _async_update_data(self) -> LogixState:
         try:
-            data = await self.client.get_controller(self.model.parse_state)
+            data = await self.client.get_controller(self.model.parse_state, self.model.state_path)
             if self.status is None or time.monotonic() - self._status_at >= STATUS_INTERVAL:
                 await self._async_update_status()
         except LogixAuthError as err:
@@ -133,7 +134,7 @@ class LogixCoordinator(DataUpdateCoordinator[LogixState]):
 
     async def _async_update_status(self) -> None:
         try:
-            self.status = await self.client.get_status()
+            self.status = self.model.parse_status(await self.client.get_status(self.model.status_path))
         except LogixConnectionError as err:
             LOGGER.debug("Could not read status of %s: %s", self.client.host, err)
             return

@@ -7,6 +7,9 @@ changing the color edits that slot. Brightness is shared by all LEDs on the devi
 Logix Vent, Logix RGB Plug and Logix GR: one ordinary RGB light with brightness, transitions and
 pulse effects. The vent's is a status light, the plug's is its night light, named "Light", and
 the Logix GR's is the LED in its button, named "Button light".
+
+Logix Fixture: the whole LED strip is one light named after the device, with brightness, color
+and the device's animated effects ("Solid" is no effect). The effect speed is a number entity.
 """
 
 from __future__ import annotations
@@ -30,8 +33,8 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import slugify
 import voluptuous as vol
 
-from .api import OutletState, StatusLight, VentState, rgb_to_hex
-from .const import DOMAIN, SERVICE_SET_LED_COLORS
+from .api import FixtureState, LogixError, OutletState, StatusLight, VentState, rgb_to_hex
+from .const import DOMAIN, LOGGER, SERVICE_SET_LED_COLORS
 from .coordinator import LogixConfigEntry, LogixCoordinator
 from .entity import LogixEntity
 
@@ -39,6 +42,20 @@ PARALLEL_UPDATES = 1
 
 RGB_SCHEMA = vol.All(vol.ExactSequence((cv.byte, cv.byte, cv.byte)), vol.Coerce(tuple))
 ATTR_OFF_COLOR = "off_color"
+
+# Logix Fixture firmware 1.2.0's effects, used if GET /api/effects fails during setup.
+FIXTURE_EFFECTS = (
+    "Solid",
+    "Breathe",
+    "Rainbow",
+    "Rainbow Cycle",
+    "Color Wipe",
+    "Theater Chase",
+    "Twinkle",
+    "Comet",
+    "Candle",
+    "Christmas",
+)
 
 
 def _color_attr(action: str) -> str:
@@ -57,6 +74,13 @@ async def async_setup_entry(
     ]
     if "statusLight" in coordinator.capabilities:
         entities.append(LogixStatusLight(coordinator))
+    if isinstance(coordinator.data, FixtureState):
+        try:
+            effects = await coordinator.client.get_effects()
+        except LogixError as err:
+            LOGGER.debug("Using the built-in effect list for %s: %s", coordinator.device_uid, err)
+            effects = list(FIXTURE_EFFECTS)
+        entities.append(LogixFixtureLight(coordinator, effects))
     async_add_entities(entities)
 
     platform = entity_platform.async_get_current_platform()
@@ -232,4 +256,78 @@ class LogixStatusLight(LogixEntity, LightEntity):
 
     async def async_set_led_colors(self, **colors: tuple[int, int, int]) -> None:
         """The status light has no saved colors."""
+        raise ServiceValidationError(translation_domain=DOMAIN, translation_key="led_colors_not_supported")
+
+
+class LogixFixtureLight(LogixEntity, LightEntity):
+    """A Logix Fixture's LED strip, named after the device.
+
+    The device fades brightness changes itself (400 ms), so there is no transition support.
+    Changing the color, brightness or effect also turns the light on, as Home Assistant expects.
+    """
+
+    _attr_color_mode = ColorMode.RGB
+    _attr_supported_color_modes = {ColorMode.RGB}
+    _attr_supported_features = LightEntityFeature.EFFECT
+    _attr_translation_key = "fixture"
+    _attr_name = None
+
+    # The device's first effect, a plain color, is Home Assistant's "no effect".
+    _DEVICE_NO_EFFECT = "Solid"
+
+    def __init__(self, coordinator: LogixCoordinator, effects: list[str]) -> None:
+        """Initialize the entity."""
+        super().__init__(coordinator, "light")
+        self._to_device = {EFFECT_OFF: self._DEVICE_NO_EFFECT}
+        self._to_device.update({slugify(e): e for e in effects if e != self._DEVICE_NO_EFFECT})
+        self._from_device = {device: ha for ha, device in self._to_device.items()}
+        self._attr_effect_list = list(self._to_device)
+
+    @property
+    def _state(self) -> FixtureState:
+        return self.coordinator.data  # type: ignore[return-value]  # only set up on a fixture
+
+    @property
+    def is_on(self) -> bool:
+        """Light is on."""
+        return self._state.on
+
+    @property
+    def brightness(self) -> int:
+        """Master brightness 0-255."""
+        return self._state.brightness
+
+    @property
+    def rgb_color(self) -> tuple[int, int, int]:
+        """The color; effects such as Breathe and Comet use it, rainbows and Christmas don't."""
+        return self._state.color
+
+    @property
+    def effect(self) -> str:
+        """Running effect, or EFFECT_OFF for a solid color."""
+        return self._from_device.get(self._state.effect, slugify(self._state.effect))
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn on, optionally changing color, brightness and effect."""
+        fields: dict[str, Any] = {"on": True}
+        if ATTR_RGB_COLOR in kwargs:
+            fields["color"] = list(kwargs[ATTR_RGB_COLOR])
+        if ATTR_BRIGHTNESS in kwargs:
+            fields["bri"] = kwargs[ATTR_BRIGHTNESS]
+        if (effect := kwargs.get(ATTR_EFFECT)) is not None:
+            if effect not in self._to_device:
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="invalid_effect",
+                    translation_placeholders={"effect": str(effect)},
+                )
+            fields["effect"] = self._to_device[effect]
+        await self.coordinator.async_command(self.coordinator.client.set_state(fields))
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn off; the device fades out and keeps its color and effect."""
+        await self.coordinator.async_command(self.coordinator.client.set_state({"on": False}))
+
+    async def async_set_led_colors(self, **colors: tuple[int, int, int]) -> None:
+        """The fixture has no saved colors."""
         raise ServiceValidationError(translation_domain=DOMAIN, translation_key="led_colors_not_supported")

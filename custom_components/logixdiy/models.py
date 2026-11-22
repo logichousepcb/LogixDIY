@@ -15,7 +15,15 @@ from typing import Any
 from homeassistant.components.switch import SwitchDeviceClass
 from homeassistant.const import Platform
 
-from .api import ControllerState, LogixState, OutletState, TempState, VentState
+from .api import (
+    ControllerState,
+    FixtureState,
+    LogixState,
+    OutletState,
+    TempState,
+    VentState,
+    fixture_status,
+)
 from .const import DEFAULT_SCAN_INTERVAL, SUPPORTED_API_VERSION
 
 
@@ -34,6 +42,11 @@ class LogixModel:
     # Poll interval without MQTT, unless the user sets one. Devices with buttons poll every
     # second to catch presses; a sensor that reads every 10 s needs far less.
     default_scan_interval: float = DEFAULT_SCAN_INTERVAL
+    # Where the live state and the diagnostics come from. A device without /api/status reads
+    # them from another endpoint and maps them to its keys (version, ip, rssi).
+    state_path: str = "/api/controller"
+    status_path: str = "/api/status"
+    parse_status: Callable[[dict[str, Any]], dict[str, Any]] = dict
 
 
 MODELS: dict[str, LogixModel] = {
@@ -181,6 +194,25 @@ MODELS: dict[str, LogixModel] = {
             ),
             parse_state=TempState.from_json,
             default_scan_interval=10.0,
+        ),
+        LogixModel(
+            # ESP-12F driving an addressable LED strip or string (logix-fixture-firmware). It has
+            # its own API: one light with effects, /api/state instead of /api/controller and an
+            # optional API token instead of an admin password. No buttons, but its IR remote can
+            # change the light, so it polls every 5 s.
+            model="logixfixture",
+            name="Logix Fixture",
+            platforms=(
+                Platform.BUTTON,
+                Platform.LIGHT,
+                Platform.NUMBER,
+                Platform.SENSOR,
+            ),
+            parse_state=FixtureState.from_json,
+            default_scan_interval=5.0,
+            state_path="/api/state",
+            status_path="/api/info",
+            parse_status=fixture_status,
         ),
     )
 }

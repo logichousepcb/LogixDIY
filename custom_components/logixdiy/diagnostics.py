@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 
 from .coordinator import LogixConfigEntry
 
-TO_REDACT = {CONF_PASSWORD, "savedSsid", "mac"}
+TO_REDACT = {CONF_PASSWORD, "savedSsid", "ssid", "mac"}
 
 
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: LogixConfigEntry) -> dict[str, Any]:

@@ -18,7 +18,7 @@
       },
       "credentials": {
         "title": "Admin password",
-        "description": "{name} is protected by an admin password. Enter the password set under Device Settings → Hostname & Security.",
+        "description": "{name} is protected by an admin password. Enter the password set under Device Settings → Hostname & Security. For a Logix Fixture, enter the API token from the Device tab of its web page.",
         "data": {
           "password": "Password"
         }
@@ -153,6 +153,24 @@
           }
         }
       },
+      "fixture": {
+        "state_attributes": {
+          "effect": {
+            "state": {
+              "off": "Solid",
+              "breathe": "Breathe",
+              "rainbow": "Rainbow",
+              "rainbow_cycle": "Rainbow cycle",
+              "color_wipe": "Color wipe",
+              "theater_chase": "Theater chase",
+              "twinkle": "Twinkle",
+              "comet": "Comet",
+              "candle": "Candle",
+              "christmas": "Christmas"
+            }
+          }
+        }
+      },
       "status_light": {
         "name": "Status light",
         "state_attributes": {
@@ -170,7 +188,8 @@
       "vent": { "name": "Vent" }
     },
     "number": {
-      "brightness": { "name": "LED brightness" }
+      "brightness": { "name": "LED brightness" },
+      "effect_speed": { "name": "Effect speed" }
     },
     "select": {
       "led_state": {

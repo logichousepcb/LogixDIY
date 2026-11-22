@@ -261,7 +261,49 @@ class TempState:
             raise LogixConnectionError(f"Unexpected temperature state: {err!r}") from err
 
 
-type LogixState = ControllerState | VentState | OutletState | TempState
+@dataclass(frozen=True, slots=True)
+class FixtureState:
+    """Parsed GET /api/state of a Logix Fixture (an addressable LED strip or string).
+
+    The whole strip is one light: on/off, master brightness, one color and an effect, which
+    animates at `speed`.
+    """
+
+    on: bool
+    brightness: int  # 0-255
+    color: RGB
+    effect: str  # effect name, e.g. "Solid" or "Christmas"
+    speed: int  # 0-255
+    buttons: tuple[ButtonState, ...] = ()  # none; here for the coordinator's action tracking
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> FixtureState:
+        """Build from the device's JSON; raises LogixConnectionError if it is malformed."""
+        try:
+            red, green, blue = (int(c) for c in data["color"])
+            return cls(
+                on=bool(data["on"]),
+                brightness=int(data["bri"]),
+                color=(red, green, blue),
+                effect=str(data["effectName"]),
+                speed=int(data["speed"]),
+            )
+        except (KeyError, TypeError, ValueError) as err:
+            raise LogixConnectionError(f"Unexpected fixture state: {err!r}") from err
+
+
+def fixture_status(info: dict[str, Any]) -> dict[str, Any]:
+    """The Logix Fixture has no /api/status; its /api/info carries the same diagnostics."""
+    wifi = info.get("wifi") or {}
+    return {
+        "version": info.get("version"),
+        "ip": wifi.get("ip"),
+        "rssi": wifi.get("rssi"),
+        "connected": wifi.get("connected"),
+    }
+
+
+type LogixState = ControllerState | VentState | OutletState | TempState | FixtureState
 
 
 class LogixClient:
@@ -275,6 +317,9 @@ class LogixClient:
         if password:
             token = base64.b64encode(f"{ADMIN_USER}:{password}".encode()).decode()
             self._headers["Authorization"] = f"Basic {token}"
+            # The Logix Fixture uses an API token instead of an admin password; it reads it from
+            # X-Api-Key when Authorization isn't a Bearer token. The other devices ignore it.
+            self._headers["X-Api-Key"] = password
         # The ESP8266 web server handles one connection at a time; queue requests here rather
         # than have them time out on the device.
         self._lock = asyncio.Lock()
@@ -284,7 +329,13 @@ class LogixClient:
         """URL of the device's web page."""
         return f"http://{self.host}"
 
-    async def _request(self, method: str, path: str, data: dict[str, Any] | None = None) -> Any:
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        data: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
+    ) -> Any:
         async with self._lock:
             try:
                 async with (
@@ -293,6 +344,7 @@ class LogixClient:
                         method,
                         f"{self.base_url}{path}",
                         data=data,
+                        json=json,
                         headers=self._headers,
                     ) as resp,
                 ):
@@ -317,17 +369,25 @@ class LogixClient:
         info = await self._request("GET", "/api/info")
         if not isinstance(info, dict) or not info.get("id") or not info.get("model"):
             raise LogixConnectionError(f"{self.host} is not a Logix device")
+        # The Logix Fixture names these "version" and "auth"; use the family's names.
+        if "fw" not in info and isinstance(info.get("version"), str):
+            info["fw"] = info["version"]
+        if "authRequired" not in info and isinstance(info.get("auth"), bool):
+            info["authRequired"] = info["auth"]
         return info
 
-    async def get_status(self) -> dict[str, Any]:
+    async def get_status(self, path: str = "/api/status") -> dict[str, Any]:
         """Firmware, network and system status."""
-        return await self._request("GET", "/api/status")
+        return await self._request("GET", path)
 
     async def get_controller[T: LogixState](
-        self, parse: Callable[[dict[str, Any]], T] = ControllerState.from_json
+        self,
+        parse: Callable[[dict[str, Any]], T] = ControllerState.from_json,
+        path: str = "/api/controller",
     ) -> T:
-        """Live state from /api/controller, parsed by the model's state class."""
-        return parse(await self._request("GET", "/api/controller"))
+        """Live state from /api/controller (/api/state on a Logix Fixture), parsed by the model's
+        state class."""
+        return parse(await self._request("GET", path))
 
     async def set_controller(self, fields: dict[str, Any]) -> None:
         """Set any LED colors, LED states or brightness (POST /api/controller keys)."""
@@ -360,6 +420,22 @@ class LogixClient:
     async def read_now(self) -> None:
         """Logix Temp: take a reading now instead of waiting for the next interval."""
         await self._request("POST", "/api/controller/read")
+
+    async def set_state(self, fields: dict[str, Any]) -> None:
+        """Logix Fixture: change on, bri, color, effect or speed (a JSON body)."""
+        await self._request("POST", "/api/state", json=fields)
+
+    async def get_effects(self) -> list[str]:
+        """Logix Fixture: effect names, in id order."""
+        effects = await self._request("GET", "/api/effects")
+        try:
+            return [str(e["name"]) for e in sorted(effects, key=lambda e: int(e["id"]))]
+        except (KeyError, TypeError, ValueError) as err:
+            raise LogixConnectionError(f"Unexpected effect list: {err!r}") from err
+
+    async def identify(self) -> None:
+        """Logix Fixture: blink the LEDs white for about 3 seconds."""
+        await self._request("POST", "/api/identify")
 
     async def reboot(self) -> None:
         """Restart the device."""

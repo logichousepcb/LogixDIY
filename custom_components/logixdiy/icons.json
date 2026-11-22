@@ -15,10 +15,12 @@
       "led": { "default": "mdi:led-on" },
       "light": { "default": "mdi:lightbulb-night" },
       "button_light": { "default": "mdi:led-on" },
-      "status_light": { "default": "mdi:led-on" }
+      "status_light": { "default": "mdi:led-on" },
+      "fixture": { "default": "mdi:led-strip-variant" }
     },
     "number": {
-      "brightness": { "default": "mdi:brightness-6" }
+      "brightness": { "default": "mdi:brightness-6" },
+      "effect_speed": { "default": "mdi:speedometer" }
     },
     "select": {
       "led_state": {

@@ -1,4 +1,4 @@
-"""Number entity: LED brightness for the whole device."""
+"""Number entities: LED brightness for the whole device, and a Logix Fixture's effect speed."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from homeassistant.const import PERCENTAGE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from .api import FixtureState
 from .coordinator import LogixConfigEntry, LogixCoordinator
 from .entity import LogixEntity
 
@@ -18,10 +19,12 @@ async def async_setup_entry(
     entry: LogixConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up the brightness number."""
+    """Set up the brightness or effect speed number."""
     coordinator = entry.runtime_data
     if coordinator.capabilities.get("brightness"):
         async_add_entities([LogixBrightness(coordinator)])
+    if isinstance(coordinator.data, FixtureState):
+        async_add_entities([LogixEffectSpeed(coordinator)])
 
 
 class LogixBrightness(LogixEntity, NumberEntity):
@@ -46,3 +49,33 @@ class LogixBrightness(LogixEntity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         """Set brightness; the device debounces the flash write for slider drags."""
         await self.coordinator.async_command(self.coordinator.client.set_brightness(round(value * 255 / 100)))
+
+
+class LogixEffectSpeed(LogixEntity, NumberEntity):
+    """Logix Fixture: how fast the effect animates, as a percentage of the device's 0-255 range.
+
+    0 holds the Christmas twinkle steady.
+    """
+
+    _attr_translation_key = "effect_speed"
+    _attr_native_min_value = 0
+    _attr_native_max_value = 100
+    _attr_native_step = 1
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_mode = NumberMode.SLIDER
+
+    def __init__(self, coordinator: LogixCoordinator) -> None:
+        """Initialize the entity."""
+        super().__init__(coordinator, "effect_speed")
+
+    @property
+    def native_value(self) -> int:
+        """Speed in percent."""
+        state: FixtureState = self.coordinator.data  # type: ignore[assignment]
+        return round(state.speed * 100 / 255)
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Set the speed without turning the light on."""
+        await self.coordinator.async_command(
+            self.coordinator.client.set_state({"speed": round(value * 255 / 100)})
+        )

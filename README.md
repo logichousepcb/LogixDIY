@@ -24,6 +24,7 @@
 | Logix RGB Switch: KAUF SRF10 in-wall RGB light switch | `logixrgbswitch` | [logix-rgb-switch-firmware](https://github.com/logichousepcb/logix-rgb-switch-firmware) 1.0.0 or later (API version 1) |
 | Logix Temp: Wemos D1 mini with a DS18B20 temperature sensor | `logixtemp` | [logix-temp-firmware](https://github.com/logichousepcb/logix-temp-firmware) 1.0.0 or later (API version 1) |
 | Logix 3-Way Switch: Moes 3-way wall switch | `logix3way` | logix-3way-firmware 1.0.0 or later (API version 1) |
+| Logix Fixture: ESP-12F addressable RGB LED strip/string controller with IR remote | `logixfixture` | logix-fixture-firmware 1.2.0 or later (API version 1) |
 
 See **[DEVICES.md](DEVICES.md)** for each device's requirements, entities and known limitations. More Logix devices will be added over time.
 
@@ -241,11 +242,23 @@ It has no buttons, so there are no events or device triggers. Without MQTT it is
 
 To have it show up as a light, open the switch's settings in Home Assistant and set **Show as** to **Light**.
 
+## What you get (Logix Fixture)
+
+| Entity | Count | Description |
+|---|---|---|
+| `light.<device>` | 1 | The LED strip, named after the device (e.g. `light.molly_s_tree`): on/off, brightness, RGB color and the device's effects (Breathe, Rainbow, Rainbow cycle, Color wipe, Theater chase, Twinkle, Comet, Candle, Christmas). No effect (`off`) is a solid color. |
+| `number.<device>_effect_speed` | 1 | How fast the effect animates, 0-100 %. 0 holds the Christmas twinkle steady. |
+| `button.<device>_identify` | 1 | Blinks the strip white for about 3 s, then restores it |
+| `button.<device>_restart` | 1 | Restarts the device |
+| `sensor.<device>_wi_fi_signal`, `sensor.<device>_ip_address` | 2 | Diagnostics (IP disabled by default) |
+
+It has no buttons and no MQTT, so there are no events or device triggers. It is polled every 5 s, which picks up changes from its IR remote and web page. If the device's API token is on, enter the token when Home Assistant asks for the password.
+
 ## How it talks to the device
 
 - **Commands** always go over the device's HTTP API.
 - **State and button actions** are pushed over MQTT when the device has MQTT enabled and Home Assistant's MQTT integration is connected to the same broker. Polling then drops to once a minute, only to resync and read diagnostics.
-- **Without MQTT,** the integration polls `GET /api/controller` every second (every 10 s for a Logix Temp, which has no buttons), and detects button actions from changes in each button's `actionCount`. If a button completes several actions between two polls, only the last one is reported. Set a shorter interval, or use MQTT, if that matters for you.
+- **Without MQTT,** the integration polls `GET /api/controller` every second (every 10 s for a Logix Temp and every 5 s for a Logix Fixture, which have no buttons; the fixture's state is `GET /api/state`), and detects button actions from changes in each button's `actionCount`. If a button completes several actions between two polls, only the last one is reported. Set a shorter interval, or use MQTT, if that matters for you.
 
 Both settings live under **Configure** on the integration: MQTT on or off, and the poll interval (0.5-60 s).
 

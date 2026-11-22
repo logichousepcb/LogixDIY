@@ -159,7 +159,8 @@ class LogixConfigFlow(ConfigFlow, domain=DOMAIN):
             if not self._info:
                 # Reauth: /api/info never needs a password and says which state format to expect.
                 self._info = await client.get_info()
-            await client.get_controller(MODELS[self._info["model"]].parse_state)
+            model = MODELS[self._info["model"]]
+            await client.get_controller(model.parse_state, model.state_path)
         except LogixAuthError:
             return "invalid_auth"
         except LogixConnectionError:

@@ -16,6 +16,7 @@ This list covers every Logix device the LogixDIY integration can set up, and wha
 | [Logix RGB Switch](#logix-rgb-switch): KAUF SRF10 in-wall RGB light switch | `logixrgbswitch` | 1.0.0 | 1 | 1.6.0 | Supported |
 | [Logix Temp](#logix-temp): Wemos D1 mini with a DS18B20 temperature sensor | `logixtemp` | 1.0.0 | 1 | 1.9.0 | Supported |
 | [Logix 3-Way Switch](#logix-3-way-switch): Moes 3-way wall switch | `logix3way` | 1.0.0 | 1 | 1.10.0 | Supported |
+| [Logix Fixture](#logix-fixture): ESP-12F addressable RGB LED strip/string controller with IR remote | `logixfixture` | 1.2.0 | 1 | 1.11.0 | Supported |
 
 **Model ID** is the `model` value the device reports in its mDNS TXT record and at `GET /api/info`. **API version** is the `api` value there. The integration refuses a device that reports a newer API version than it understands.
 
@@ -436,6 +437,43 @@ The button can be detached on the device's settings page. Then a single press on
 - A change made at the other 3-way switch shows up through MQTT within about 0.1 s; without MQTT, at the next poll.
 - With no power on the light circuit (a tripped breaker, say) the light reads off, and turning it on moves the relay without effect.
 - A single press takes effect about 0.4 s after the press, while the device waits to see whether another press follows.
+
+## Logix Fixture
+
+Firmware for the LoGiX base fixture board: an ESP-12F (ESP8266, 4 MB) driving an addressable RGB LED strip or string (WS2812/SK6812 type, GPIO2 by default, up to 800 LEDs) through a level shifter, with an IR receiver for the 24-key remote. The whole strip is one light with animated effects. Its HTTP API is its own (`/api/state` rather than `/api/controller`), and it has no MQTT.
+
+- **Firmware:** logix-fixture-firmware, version 1.2.0 or later. Updates go over its web page (Firmware tab) or `POST /api/update`.
+
+### Discovery
+
+| Method | Requirement |
+|---|---|
+| mDNS (`_logix._tcp`) | Device and Home Assistant on the same network segment |
+| Manual | Device IP address or hostname, e.g. `molly-s-tree.local` |
+
+### Entities
+
+| Entity | Count | Notes |
+|---|---|---|
+| Light (named after the device) | 1 | Brightness, RGB color and effects. The effect list comes from the device's `GET /api/effects`; "Solid" is Home Assistant's no-effect (`off`). Breathe, Color wipe, Theater chase, Twinkle, Comet and Candle use the color; the rainbows and Christmas ignore it. |
+| Number: Effect speed | 1 | 0-100 %, the device's 0-255 speed. Changing it doesn't turn the light on. |
+| Button: Identify | 1 | Blinks the LEDs white for about 3 s, even while off. Config category. |
+| Button: Restart | 1 | |
+| Sensor: Wi-Fi signal | 1 | Diagnostic |
+| Sensor: IP address | 1 | Diagnostic. Disabled by default. |
+
+No events or device triggers: the device has no buttons.
+
+### Authentication
+
+The device's API token is off by default. When it is on (Device tab of its web page), setup asks for a password: enter the token. The integration sends it as `X-Api-Key`.
+
+### Known limitations
+
+- No MQTT push, so changes from the IR remote or the web page show up at the next poll (5 s by default; set under **Configure**). The device's WebSocket push on port 81 isn't used yet.
+- The device always fades brightness changes over 0.4 s itself, so `transition` isn't supported.
+- The current limiter on the device may dim the strip below the brightness Home Assistant shows.
+- Effects added by a later firmware appear after the integration is reloaded.
 
 ## Adding a device
 
